@@ -63,9 +63,12 @@ export function AuthForm({
   footerText,
   footerLinkLabel,
   footerLinkTo,
+  successMessage = 'Request submitted successfully.',
 }) {
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState({})
+  const [apiError, setApiError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   return (
     <section className="auth-page">
@@ -96,12 +99,13 @@ export function AuthForm({
           <h2>{title}</h2>
           <p>{subtitle}</p>
         </div>
-        {submitted && <Alert type="success" message="Request submitted successfully." />}
+        {submitted && <Alert type="success" message={successMessage} />}
+        {apiError && !submitted && <Alert type="error" message={apiError} />}
         <form
           className="auth-form"
           autoComplete={disableAutofill ? 'off' : undefined}
           noValidate
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault()
             const form = Object.fromEntries(new FormData(event.currentTarget))
             const validationErrors = validateAuthForm(form, fields)
@@ -113,8 +117,16 @@ export function AuthForm({
             }
 
             setErrors({})
-            onSubmit?.(form)
-            setSubmitted(true)
+            setApiError('')
+            setLoading(true)
+            try {
+              await onSubmit?.(form)
+              setSubmitted(true)
+            } catch (err) {
+              setApiError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
+            } finally {
+              setLoading(false)
+            }
           }}
         >
           {fields.map((field) => (
@@ -142,8 +154,8 @@ export function AuthForm({
               )}
             </div>
           ))}
-          <button className="primary-button full auth-submit" type="submit">
-            {buttonLabel}
+          <button className="primary-button full auth-submit" type="submit" disabled={loading}>
+            {loading ? 'Please wait...' : buttonLabel}
           </button>
         </form>
         {footerText && footerLinkTo && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import heroImage from '../../assets/hero.png'
 import { quickTabs } from '../../data/marketplace'
+
+const heroImage = 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?auto=format&fit=crop&w=1200&q=80'
 import { getFeaturedAds } from '../../services/ads.service'
 import { handleImageError } from '../../lib/images'
 import { usePageTitle } from '../../hooks/use-page-title'
@@ -66,15 +67,17 @@ export default function HomePage() {
         </div>
         <div className="hero-panel hero-listings">
           <div className="hero-panel-cover">
-            <img src={heroImage} alt="NewZealankans marketplace" />
-            <span>Featured now</span>
+            <img src={heroImage} alt="NewZealankans — New Zealand marketplace" />
+            <div className="hero-panel-overlay">
+              <span className="hero-panel-badge">🇳🇿 New Zealand's local marketplace</span>
+            </div>
           </div>
           {ads.slice(0, 3).map((ad) => (
             <Link className="mini-listing" key={ad.id} to={`/ads/${ad.slug}`}>
               <img src={ad.image} alt={ad.title} onError={(event) => handleImageError(event, ad.title)} />
               <span>
                 <strong>{ad.title}</strong>
-                <small>{ad.location} / {ad.price}</small>
+                <small>{ad.location} · {ad.price}</small>
               </span>
             </Link>
           ))}
@@ -89,7 +92,7 @@ export default function HomePage() {
       <section className="content-section two-column">
         <div>
           <SectionHeader title="Trade picks" actionLabel="Search listings" actionTo="/search" />
-          {error && <Alert type="info" message={error} />}
+          {error && <Alert type="error" message={error} />}
           <AdGrid ads={ads.filter((ad) => ad.featured)} />
         </div>
         <aside className="sidebar">

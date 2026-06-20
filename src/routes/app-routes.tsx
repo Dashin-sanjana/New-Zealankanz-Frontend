@@ -12,7 +12,12 @@ import ResetPasswordPage from '../pages/auth/reset-password/page'
 import EmailVerificationPage from '../pages/auth/verify-email/page'
 import UserDashboardPage from '../pages/user/dashboard/page'
 import MyAdsPage from '../pages/user/my-ads/page'
+import WatchlistPage from '../pages/user/watchlist/page'
+import SettingsPage from '../pages/user/settings/page'
 import ContactPage from '../pages/contact/page'
+import AboutPage from '../pages/static/about'
+import TermsPage from '../pages/static/terms'
+import PrivacyPage from '../pages/static/privacy'
 import AdminDashboardPage from '../pages/admin/dashboard/page'
 import { AdminAllAdsPage, AdminPendingAdsPage } from '../pages/admin/ads/page'
 import {
@@ -34,7 +39,7 @@ export default function AppRoutes({ route, auth }) {
   if (pathname === paths.register) return <RegisterPage auth={auth} />
   if (pathname === paths.login) return <LoginPage auth={auth} />
   if (pathname === paths.forgotPassword) return <ForgotPasswordPage />
-  if (pathname === paths.resetPassword) return <ResetPasswordPage />
+  if (pathname === paths.resetPassword) return <ResetPasswordPage query={query} />
   if (pathname === paths.verifyEmail) return <EmailVerificationPage query={query} />
   if (pathname === paths.postAd) return <RequireAuth auth={auth}><PostAdPage /></RequireAuth>
   if (pathname.startsWith('/edit-ad/')) {
@@ -44,7 +49,12 @@ export default function AppRoutes({ route, auth }) {
     return <RequireAuth auth={auth}><UserDashboardPage auth={auth} /></RequireAuth>
   }
   if (pathname === paths.myAds) return <RequireAuth auth={auth}><MyAdsPage /></RequireAuth>
+  if (pathname === paths.watchlist) return <RequireAuth auth={auth}><WatchlistPage /></RequireAuth>
+  if (pathname === paths.settings) return <RequireAuth auth={auth}><SettingsPage auth={auth} /></RequireAuth>
   if (pathname === paths.contact) return <ContactPage />
+  if (pathname === paths.about) return <AboutPage />
+  if (pathname === paths.terms) return <TermsPage />
+  if (pathname === paths.privacy) return <PrivacyPage />
   if (pathname === paths.admin) return <RequireAdmin auth={auth}><AdminDashboardPage /></RequireAdmin>
   if (pathname === paths.adminPendingAds) return <RequireAdmin auth={auth}><AdminPendingAdsPage /></RequireAdmin>
   if (pathname === paths.adminAds) return <RequireAdmin auth={auth}><AdminAllAdsPage /></RequireAdmin>

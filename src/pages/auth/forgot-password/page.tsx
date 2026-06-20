@@ -7,9 +7,10 @@ export default function ForgotPasswordPage() {
   return (
     <AuthForm
       title="Forgot password"
-      subtitle="Request a password reset email from the backend."
+      subtitle="Enter your email and we'll send you a reset link."
       buttonLabel="Send reset link"
       fields={['Email']}
+      successMessage="If that email is registered, a reset link has been sent. Check your inbox."
       onSubmit={(form) => requestPasswordReset(form.Email)}
     />
   )

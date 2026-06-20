@@ -1,6 +1,7 @@
 import { AuthForm } from '../../../components/forms/auth-form'
 import { navigate } from '../../../lib/navigation'
 import { usePageTitle } from '../../../hooks/use-page-title'
+import { registerAccount, loginAccount } from '../../../services/auth.service'
 
 export default function RegisterPage({ auth }) {
   usePageTitle('Register')
@@ -17,9 +18,19 @@ export default function RegisterPage({ auth }) {
       footerText="Already have an account?"
       footerLinkLabel="Login"
       footerLinkTo="/login"
-      onSubmit={(form) => {
-        auth.login({ name: form['Full name'] || 'Marketplace User', email: form.Email, role: 'USER' })
-        navigate('/dashboard')
+      successMessage="Account created! Check your email to verify your address, then continue to your dashboard."
+      onSubmit={async (form) => {
+        await registerAccount({
+          firstName: form['Full name'],
+          lastName: '',
+          email: form.Email,
+          password: form.Password,
+        })
+        // Auto-login so user lands on dashboard with email-verify banner
+        const result = await loginAccount({ email: form.Email, password: form.Password })
+        auth.login(result)
+        // Short delay lets the success message render before navigating
+        setTimeout(() => navigate('/dashboard'), 1500)
       }}
     />
   )

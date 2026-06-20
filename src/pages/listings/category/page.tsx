@@ -13,7 +13,11 @@ import NotFoundPage from '../../not-found/page'
 export default function CategoryPage({ slug }) {
   const [category, setCategory] = useState(() => categories.find((item) => item.slug === slug))
   const [loaded, setLoaded] = useState(false)
-  usePageTitle(category?.name || 'Category')
+  usePageTitle(category?.name || 'Category', {
+    description: category?.description
+      ? category.description
+      : `Browse ${category?.name ?? ''} listings on NewZealankans Marketplace across all NZ cities.`,
+  })
   const [ads, setAds] = useState([])
   const [error, setError] = useState('')
 
