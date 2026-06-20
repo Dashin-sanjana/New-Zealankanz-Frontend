@@ -75,7 +75,7 @@ export function AdForm({ mode, ad }) {
           message={mode === 'edit' ? 'Ad saved and moved to Pending Approval.' : 'Ad submitted for admin approval.'}
         />
       )}
-      {error && <Alert type="info" message={error} />}
+      {error && <Alert type="error" message={error} />}
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="form-grid">
           <Input label="Title" name="title" defaultValue={ad?.title} required />

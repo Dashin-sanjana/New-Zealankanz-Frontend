@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Block admin and private pages
+Disallow: /admin
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /my-ads
+Disallow: /post-ad
+Disallow: /edit-ad/
+
+# Sitemap
+Sitemap: https://newzealankans.nz/api/seo/sitemap

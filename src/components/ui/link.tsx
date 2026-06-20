@@ -6,13 +6,15 @@ interface LinkProps {
   children: React.ReactNode
   className?: string
   onClick?: () => void
+  style?: React.CSSProperties
 }
 
-export function Link({ to, children, className, onClick }: LinkProps) {
+export function Link({ to, children, className, onClick, style }: LinkProps) {
   return (
     <a
       className={className}
       href={to}
+      style={style}
       onClick={(event) => {
         event.preventDefault()
         onClick?.()

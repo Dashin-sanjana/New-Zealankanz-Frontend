@@ -5,26 +5,26 @@ import { Link } from '../ui/link'
 
 const categoryMeta = {
   property: {
-    description: 'Homes, rentals, and flatmates',
-    icon: 'Home',
+    description: 'Homes, rentals, and flatmates across NZ',
+    icon: '🏠',
     accent: 'coral',
     highlights: ['Sale', 'Rent', 'Flatmates'],
   },
   motor: {
     description: 'Cars, bikes, parts, and accessories',
-    icon: 'Auto',
+    icon: '🚗',
     accent: 'gold',
     highlights: ['Cars', 'Bikes', 'Parts'],
   },
   jobs: {
     description: 'Local roles, shifts, and flexible work',
-    icon: 'Work',
+    icon: '💼',
     accent: 'blue',
     highlights: ['Full-time', 'Part-time', 'Casual'],
   },
   services: {
     description: 'Trades, cleaning, repairs, and local help',
-    icon: 'Help',
+    icon: '🔧',
     accent: 'green',
     highlights: ['Trades', 'Cleaning', 'Repairs'],
   },
@@ -45,9 +45,10 @@ export function CategoryGrid() {
           key={category.id}
           to={`/category/${category.slug}`}
         >
+          <div className="category-card-bg" aria-hidden="true" />
           <span className="category-card-top">
             <span className="category-icon" aria-hidden="true">
-              {categoryMeta[category.id]?.icon || category.name}
+              {categoryMeta[category.id]?.icon || '📦'}
             </span>
             <span className="category-count">{category.count} live</span>
           </span>

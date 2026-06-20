@@ -61,8 +61,8 @@ export function getFeaturedAds() {
   return apiRequest('/ads?featured=true').then((ads) => normalizeAds(ads).filter((ad) => ad.featured))
 }
 
-export function getAds({ keyword, category, subcategory, location, status } = {}) {
-  return apiRequest(`/ads${buildQuery({ keyword, category, subcategory, location, status })}`).then(normalizeAds)
+export function getAds({ keyword, category, subcategory, location, status, minPrice, maxPrice, sort } = {}) {
+  return apiRequest(`/ads${buildQuery({ keyword, category, subcategory, location, status, minPrice, maxPrice, sort })}`).then(normalizeAds)
 }
 
 export function getAdBySlug(slug) {

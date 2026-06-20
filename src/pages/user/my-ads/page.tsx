@@ -9,6 +9,7 @@ export default function MyAdsPage() {
   usePageTitle('My Ads')
   const [myAds, setMyAds] = useState([])
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'info' | 'success' | 'error'>('info')
 
   function load() {
     getMyAds()
@@ -16,7 +17,10 @@ export default function MyAdsPage() {
         setMyAds(items)
         setMessage('')
       })
-      .catch((error) => setMessage(error.message))
+      .catch((error) => {
+        setMessageType('error')
+        setMessage(error.message)
+      })
   }
 
   useEffect(load, [])
@@ -24,16 +28,18 @@ export default function MyAdsPage() {
   async function handleDelete(ad) {
     try {
       await deleteMyAd(ad.id)
+      setMessageType('success')
       setMessage('Ad deleted.')
       load()
     } catch (error) {
+      setMessageType('error')
       setMessage(error instanceof Error ? error.message : 'Could not delete this ad.')
     }
   }
 
   return (
     <PageFrame title="My ads" subtitle="Your listings show approval status and management actions.">
-      {message && <Alert type="info" message={message} />}
+      {message && <Alert type={messageType} message={message} />}
       <div className="table-card">
         {myAds.map((ad) => (
           <div className="table-row" key={ad.id}>

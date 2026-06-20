@@ -14,7 +14,7 @@ export default function ContactPage() {
   return (
     <PageFrame title="Contact" subtitle="Send a marketplace support or advertising enquiry.">
       {submitted && <Alert type="success" message="Message submitted. Admin has been notified." />}
-      {error && <Alert type="info" message={error} />}
+      {error && <Alert type="error" message={error} />}
       <form
         className="form-card"
         onSubmit={async (event) => {

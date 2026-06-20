@@ -44,6 +44,7 @@ export async function apiRequest(path, options = {}) {
   const headers = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(auth?.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {}),
+    'ngrok-skip-browser-warning': 'true',
     ...options.headers,
   }
 

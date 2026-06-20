@@ -40,6 +40,13 @@ export function expireAd(id) {
   return apiRequest(`/admin/ads/${id}/expire`, { method: 'PATCH' }).then(normalizeAd)
 }
 
+export function adminUpdateAd(id, payload) {
+  return apiRequest(`/admin/ads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function deleteAdminAd(id) {
   return apiRequest(`/admin/ads/${id}`, { method: 'DELETE' })
 }

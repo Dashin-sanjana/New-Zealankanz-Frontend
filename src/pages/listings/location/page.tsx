@@ -11,7 +11,9 @@ import NotFoundPage from '../../not-found/page'
 export default function LocationPage({ slug }) {
   const [location, setLocation] = useState(() => locations.find((item) => item.slug === slug))
   const [loaded, setLoaded] = useState(false)
-  usePageTitle(location?.name || 'Location')
+  usePageTitle(location?.name || 'Location', {
+    description: `Browse marketplace listings in ${location?.name ?? 'this area'} — property, motors, jobs, and services on NewZealankans Marketplace.`,
+  })
   const [ads, setAds] = useState([])
   const [error, setError] = useState('')
 

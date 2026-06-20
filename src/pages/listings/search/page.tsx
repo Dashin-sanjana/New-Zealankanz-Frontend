@@ -12,22 +12,33 @@ export default function SearchPage({ query }) {
   const category = query.get('category') || ''
   const subcategory = query.get('subcategory') || ''
   const location = query.get('location') || ''
+  const minPrice = query.get('minPrice') || ''
+  const maxPrice = query.get('maxPrice') || ''
+  const sort = query.get('sort') || ''
   const [ads, setAds] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getAds({ keyword, category, subcategory, location })
+    getAds({ keyword, category, subcategory, location, minPrice, maxPrice, sort })
       .then((items) => {
         setAds(items)
         setError('')
       })
       .catch((err) => setError(err.message))
-  }, [keyword, category, subcategory, location])
+  }, [keyword, category, subcategory, location, minPrice, maxPrice, sort])
 
   return (
     <PageFrame title="Search marketplace" subtitle="Search approved ads by keyword, category, and NZ city.">
-      <SearchBar defaultKeyword={keyword} defaultCategory={category} defaultSubcategory={subcategory} defaultLocation={location} />
-      {error && <Alert type="info" message={error} />}
+      <SearchBar
+        defaultKeyword={keyword}
+        defaultCategory={category}
+        defaultSubcategory={subcategory}
+        defaultLocation={location}
+        defaultMinPrice={minPrice}
+        defaultMaxPrice={maxPrice}
+        defaultSort={sort}
+      />
+      {error && <Alert type="error" message={error} />}
       <ResultSummary count={ads.length} />
       <AdGrid ads={ads} />
     </PageFrame>
