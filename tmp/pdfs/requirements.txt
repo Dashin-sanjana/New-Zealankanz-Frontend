@@ -1,0 +1,218 @@
+NewZealankans Marketplace –
+Development & Cleanup Tasks
+Website: NewZealankans Marketplace
+
+
+Project Goal
+Clean up the existing WordPress marketplace website and make the platform fully
+operational while keeping the current overall layout/design structure.
+
+The final website should be:
+
+   ●​   Clean and professional
+   ●​   Fully functional
+   ●​   Mobile responsive
+   ●​   Ready for public use
+   ●​   Easy to manage from backend/admin panel
+
+The final product should remain similar to the current design/layout unless improvements are
+necessary.
+
+
+
+
+1. Website Cleanup
+   ●​   Remove all dummy/sample/demo content
+   ●​   Remove unused plugins, pages, and test users
+   ●​   Remove unnecessary categories/tags
+   ●​   Clean up menus and navigation
+   ●​   Remove broken links and placeholder images
+   ●​   Remove unnecessary widgets/modules
+   ●​   Optimize media/library files
+
+
+
+
+2. Marketplace Categories Setup
+Create and structure the following categories and subcategories properly.
+
+
+Marketplace
+Property
+   ●​ Sale
+   ●​ Rent
+   ●​ Flatmates
+
+
+Motor
+
+Jobs
+
+Services
+Requirements:
+
+   ●​   Categories must display correctly on frontend
+   ●​   Users should be able to post ads under correct categories
+   ●​   Category pages should be properly organized
+   ●​   Search and filters should work correctly
+   ●​   URLs/permalinks should be SEO friendly
+
+
+
+
+3. NZ Cities / Ad Location Categories
+Add location/category filtering based on New Zealand cities and regions.
+
+Suggested Locations:
+
+   ●​   Auckland
+   ●​   Wellington
+   ●​   Christchurch
+   ●​   Hamilton
+   ●​   Tauranga
+   ●​   Dunedin
+   ●​   Queenstown
+   ●​   Palmerston North
+   ●​   Napier/Hastings
+   ●​   Rotorua
+   ●​   Invercargill
+
+Requirements:
+
+   ●​ Users must select a location when posting ads
+   ●​ Ads should be filterable by city/location
+   ●​ Location should appear on ad listings
+   ●​ Search by location must work correctly
+   ●​ Easy to add more cities later from backend
+
+
+
+
+4. User Registration & Ad Posting
+System
+Make sure customer/user registration is fully functional.
+
+Required Features:
+
+   ●​    User signup/register
+   ●​    Login/logout functionality
+   ●​    Forgot/reset password working
+   ●​    Email verification/notifications working
+   ●​    Registered users can submit ads
+   ●​    Ad posting form works correctly
+   ●​    Users can upload images properly
+   ●​    Users can edit/delete/manage their own ads
+   ●​    Proper validation and error/success messages
+
+
+
+
+5. Backend & Admin Process
+Check and configure backend/admin operations properly.
+
+Tasks:
+
+   ●​    Admin dashboard cleanup
+   ●​    Listing moderation workflow
+   ●​    Spam protection setup
+   ●​    Email notifications working
+   ●​    Ad management system working
+   ●​    User management functioning correctly
+   ●​    Media upload working properly
+   ●​    Database optimization and cleanup
+   ●​    Security and role permissions setup
+
+
+Ad Approval System
+IMPORTANT:​
+ No ads should go live automatically.
+Requirements:
+
+   ●​ All newly submitted ads must require admin approval before publishing
+   ●​ Any edited/updated ads must also return to “Pending Approval” status
+   ●​ Admin must be able to:
+          ○​ Approve ads
+          ○​ Reject ads
+          ○​ Edit ads if needed
+          ○​ Mark ads as featured
+   ●​ Users should receive email notifications for:
+          ○​ Ad submitted
+          ○​ Ad approved
+          ○​ Ad rejected
+          ○​ Ad expired (if applicable)
+
+
+
+
+6. Advertising Spaces
+Leave proper advertising/banner spaces across the website.
+
+Suggested locations:
+
+   ●​   Homepage banner
+   ●​   Sidebar ads
+   ●​   Category page ads
+   ●​   Listing page ads
+   ●​   Footer advertising area
+
+Requirements:
+
+   ●​ Responsive advertising sections
+   ●​ Easy to update/change banners later
+   ●​ Clean placement without affecting UX
+
+
+
+
+7. Mobile & Responsive Optimization
+   ●​   Ensure website works properly on mobile/tablet/desktop
+   ●​   Fix alignment and spacing issues
+   ●​   Improve loading speed and responsiveness
+   ●​   Make forms and buttons mobile friendly
+8. Performance & Security
+   ●​   Improve website speed/performance
+   ●​   Configure caching if required
+   ●​   Basic WordPress security setup
+   ●​   Backup system setup
+   ●​   Fix plugin/theme conflicts
+   ●​   Ensure no critical PHP/console errors
+   ●​   Optimize database and images
+
+
+
+
+9. SEO & Basic Setup
+   ●​   Proper page titles/meta setup
+   ●​   SEO-friendly URLs/permalinks
+   ●​   Google indexing readiness
+   ●​   Sitemap generation
+   ●​   Basic image optimization
+   ●​   Basic schema/SEO plugin configuration
+
+
+
+
+10. Final Testing Before Handover
+Developer must fully test:
+
+   ●​   User registration
+   ●​   Login/logout
+   ●​   Password reset
+   ●​   Ad posting
+   ●​   Ad editing
+   ●​   Admin approval workflow
+   ●​   Search/filter system
+   ●​   Contact forms
+   ●​   Mobile responsiveness
+   ●​   Loading speed
+   ●​   Email notifications
+   ●​   Image uploads
+   ●​   Category/location functionality
+Important Notes
+ ●​   Keep the current branding/design direction similar to the existing website
+ ●​   Avoid unnecessary redesign unless approved
+ ●​   Final website must be stable and production-ready
+ ●​   All major marketplace functionality must be fully operational
+ ●​   Clean and professional UI/UX required
+ ●​   Backend should be easy for admin management
+
