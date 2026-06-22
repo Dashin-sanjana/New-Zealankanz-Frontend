@@ -1,4 +1,5 @@
 import { slugify } from '../lib/slugify'
+import { fallbackAds } from '../data/marketplace'
 import { API_ORIGIN, apiRequest, unwrapCollection } from './api'
 
 function buildQuery(params) {
@@ -40,7 +41,7 @@ export function normalizeAd(ad) {
     category,
     categorySlug: ad.categorySlug || (parentCategory ? pickSlug(parentCategory, category) : pickSlug(ad.category, category)),
     subcategory,
-    subcategorySlug: ad.subcategorySlug || (parentCategory ? pickSlug(ad.category, subcategory) : ''),
+    subcategorySlug: ad.subcategorySlug || (parentCategory ? pickSlug(ad.category, subcategory) : slugify(subcategory)),
     location,
     locationSlug: ad.locationSlug || pickSlug(ad.location, location),
     price: ad.price ? `$${Number(ad.price).toLocaleString()}` : ad.priceText || (ad.amount ? `$${ad.amount}` : 'Contact seller'),
@@ -57,16 +58,44 @@ function normalizeAds(result) {
   return unwrapCollection(result).map(normalizeAd)
 }
 
+function fallbackAdItems() {
+  return fallbackAds.map(normalizeAd)
+}
+
+function searchFallbackAds({ keyword, category, subcategory, location, minPrice, maxPrice } = {}) {
+  const term = keyword?.trim().toLowerCase()
+  const min = minPrice ? Number(minPrice) : null
+  const max = maxPrice ? Number(maxPrice) : null
+
+  return fallbackAdItems().filter((ad) => {
+    const price = Number(String(ad.price).replace(/[^0-9.]/g, ''))
+    if (term && !`${ad.title} ${ad.description} ${ad.category} ${ad.location}`.toLowerCase().includes(term)) return false
+    if (category && ad.categorySlug !== category) return false
+    if (subcategory && ad.subcategorySlug !== subcategory) return false
+    if (location && ad.locationSlug !== location) return false
+    if (min !== null && price && price < min) return false
+    if (max !== null && price && price > max) return false
+    return true
+  })
+}
+
 export function getFeaturedAds() {
-  return apiRequest('/ads?featured=true').then((ads) => normalizeAds(ads).filter((ad) => ad.featured))
+  return apiRequest('/ads?featured=true')
+    .then((ads) => normalizeAds(ads).filter((ad) => ad.featured))
+    .catch(() => fallbackAdItems().filter((ad) => ad.featured))
 }
 
 export function getAds({ keyword, category, subcategory, location, status, minPrice, maxPrice, sort } = {}) {
-  return apiRequest(`/ads${buildQuery({ keyword, category, subcategory, location, status, minPrice, maxPrice, sort })}`).then(normalizeAds)
+  const params = { keyword, category, subcategory, location, status, minPrice, maxPrice, sort }
+  return apiRequest(`/ads${buildQuery(params)}`)
+    .then(normalizeAds)
+    .catch(() => searchFallbackAds(params))
 }
 
 export function getAdBySlug(slug) {
-  return apiRequest(`/ads/slug/${slug}`).then((ad) => (ad ? normalizeAd(ad) : null))
+  return apiRequest(`/ads/slug/${slug}`)
+    .then((ad) => (ad ? normalizeAd(ad) : null))
+    .catch(() => fallbackAdItems().find((ad) => ad.slug === slug) || null)
 }
 
 export function saveAd(formData, mode = 'create', idOrSlug = '') {

@@ -1,4 +1,6 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '')
+const DEFAULT_API_BASE_URL = 'http://localhost:3000/api'
+
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '')
 
 const AUTH_STORAGE_KEY = 'nzk_auth'
@@ -38,6 +40,10 @@ function getErrorMessage(payload, fallback) {
 }
 
 export async function apiRequest(path, options = {}) {
+  if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
+    throw new ApiError('Missing VITE_API_BASE_URL for this deployment.')
+  }
+
   const endpoint = path.startsWith('/') ? path : `/${path}`
   const isFormData = options.body instanceof FormData
   const auth = getStoredAuth()
@@ -56,7 +62,12 @@ export async function apiRequest(path, options = {}) {
   if (response.status === 204) return null
 
   const text = await response.text()
-  const payload = text ? JSON.parse(text) : null
+  let payload = null
+  try {
+    payload = text ? JSON.parse(text) : null
+  } catch {
+    throw new ApiError('API returned an invalid response. Check VITE_API_BASE_URL for this deployment.', response.status)
+  }
 
   if (!response.ok) {
     throw new ApiError(getErrorMessage(payload, `API request failed with status ${response.status}`), response.status, payload)

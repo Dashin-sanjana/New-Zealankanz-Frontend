@@ -26,7 +26,7 @@ export default function CategoryPage({ slug }) {
     getCategories()
       .then((items) => {
         const foundCategory = items.find((item) => item.slug === slug)
-        setCategory(foundCategory)
+        setCategory(foundCategory || categories.find((item) => item.slug === slug))
         setLoaded(true)
       })
       .catch((err) => {

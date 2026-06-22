@@ -1,5 +1,15 @@
 # React + Vite
 
+## Environment
+
+Create `.env` from `.env.example` for local development.
+
+For Vercel, set `VITE_API_BASE_URL` to the deployed backend API URL, including the `/api` prefix. Example:
+
+```sh
+VITE_API_BASE_URL=https://your-backend.example.com/api
+```
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
