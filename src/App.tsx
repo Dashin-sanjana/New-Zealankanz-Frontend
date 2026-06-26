@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { Footer } from './components/layout/footer'
 import { Header } from './components/layout/header'
@@ -11,9 +11,14 @@ function App() {
   const auth = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  // Automatically close mobile menu when navigating to another route
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [route])
+
   return (
     <div className="app-shell">
-      <Header auth={auth} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Header route={route} auth={auth} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <main>
         <AppRoutes route={route} auth={auth} />
       </main>

@@ -1,13 +1,28 @@
 import { Link } from '../ui/link'
 import newzealankanzLogo from '../../assets/newzealankanz-logo.jpg'
 
-export function Header({ auth, menuOpen, setMenuOpen }) {
+interface HeaderProps {
+  route: string
+  auth: any
+  menuOpen: boolean
+  setMenuOpen: (open: boolean) => void
+}
+
+export function Header({ route, auth, menuOpen, setMenuOpen }: HeaderProps) {
   const navItems = [
     ['Marketplace', '/search'],
     ['Property', '/category/property'],
     ['Jobs', '/category/jobs'],
     ['Services', '/category/services'],
   ]
+
+  const [pathname] = (route || '/').split('?')
+  const isActive = (to: string) => {
+    if (to === '/search') {
+      return pathname === '/search'
+    }
+    return pathname === to || pathname.startsWith(to)
+  }
 
   return (
     <header className="site-header">
@@ -19,7 +34,12 @@ export function Header({ auth, menuOpen, setMenuOpen }) {
       </button>
       <nav className={menuOpen ? 'nav open' : 'nav'}>
         {navItems.map(([label, to]) => (
-          <Link key={`${label}-${to}`} to={to} onClick={() => setMenuOpen(false)}>
+          <Link
+            key={`${label}-${to}`}
+            to={to}
+            className={isActive(to) ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
+          >
             {label}
           </Link>
         ))}

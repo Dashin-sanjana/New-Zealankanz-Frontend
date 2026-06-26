@@ -8,8 +8,8 @@ import { Alert, ResultSummary } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
 import NotFoundPage from '../../not-found/page'
 
-export default function LocationPage({ slug }) {
-  const [location, setLocation] = useState(() => locations.find((item) => item.slug === slug))
+export default function LocationPage({ slug }: { slug: string }) {
+  const [location, setLocation] = useState<any>(() => locations.find((item) => item.slug === slug))
   const [loaded, setLoaded] = useState(false)
   usePageTitle(location?.name || 'Location', {
     description: `Browse marketplace listings in ${location?.name ?? 'this area'} — property, motors, jobs, and services on NewZealankans Marketplace.`,
@@ -19,9 +19,13 @@ export default function LocationPage({ slug }) {
 
   useEffect(() => {
     setLoaded(false)
+    const localLoc = locations.find((item) => item.slug === slug)
+    setLocation(localLoc || null)
+
     getLocations()
-      .then((items) => {
-        setLocation(items.find((item) => item.slug === slug))
+      .then((items: any[]) => {
+        const foundLocation = items.find((item: any) => item.slug === slug)
+        setLocation(foundLocation || localLoc)
         setLoaded(true)
       })
       .catch((err) => {

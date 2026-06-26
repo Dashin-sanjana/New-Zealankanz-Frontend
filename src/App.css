@@ -125,7 +125,8 @@ button, a { cursor: pointer; }
   text-decoration: none;
   transition: background var(--t) var(--ease), color var(--t) var(--ease);
 }
-.nav a:hover { background: var(--red-soft); color: var(--red); }
+.nav a:hover,
+.nav a.active { background: var(--red-soft); color: var(--red); }
 
 .text-button {
   padding: 0 10px;
@@ -922,6 +923,7 @@ textarea { resize: vertical; }
   letter-spacing: -0.2px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -933,6 +935,7 @@ textarea { resize: vertical; }
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

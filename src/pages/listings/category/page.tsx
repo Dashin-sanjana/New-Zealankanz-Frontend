@@ -10,8 +10,8 @@ import { Alert, ResultSummary } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
 import NotFoundPage from '../../not-found/page'
 
-export default function CategoryPage({ slug, query }) {
-  const [category, setCategory] = useState(() => categories.find((item) => item.slug === slug))
+export default function CategoryPage({ slug, query }: { slug: string; query: any }) {
+  const [category, setCategory] = useState<any>(() => categories.find((item) => item.slug === slug))
   const [loaded, setLoaded] = useState(false)
   const keyword = query?.get('q') || query?.get('keyword') || ''
   const subcategory = query?.get('subcategory') || ''
@@ -29,10 +29,13 @@ export default function CategoryPage({ slug, query }) {
 
   useEffect(() => {
     setLoaded(false)
+    const localCat = categories.find((item) => item.slug === slug)
+    setCategory(localCat || null)
+
     getCategories()
-      .then((items) => {
-        const foundCategory = items.find((item) => item.slug === slug)
-        setCategory(foundCategory)
+      .then((items: any[]) => {
+        const foundCategory = items.find((item: any) => item.slug === slug)
+        setCategory(foundCategory || localCat)
         setLoaded(true)
       })
       .catch((err) => {
