@@ -1,4 +1,8 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '')
+const DEFAULT_API_BASE_URL = import.meta.env.PROD
+  ? 'https://new-zealankanz-backend.onrender.com/api'
+  : 'http://localhost:3000/api'
+
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '')
 const NETWORK_ERROR_MESSAGE = 'API service is unavailable. Please check that the backend is running and try again.'
 const SERVER_ERROR_MESSAGE = 'API server error. Please try again in a moment.'
