@@ -3,7 +3,7 @@ import { handleImageError } from '../../../lib/images'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { getAdBySlug } from '../../../services/ads.service'
 import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../../../services/watchlist.service'
-import { Banner } from '../../../components/marketplace/banner'
+import { AdSlot } from '../../../components/marketplace/ad-slot'
 import { Alert } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
 import NotFoundPage from '../../not-found/page'
@@ -231,7 +231,7 @@ export default function AdDetailPage({ slug }) {
             {isSaved ? '★ Saved to watchlist' : '☆ Save to watchlist'}
           </button>
           {watchMsg && <p className="watch-msg">{watchMsg}</p>}
-          <Banner placement="LISTING" compact />
+          <AdSlot name="LISTING_SIDEBAR" />
         </aside>
       </div>
     </PageFrame>

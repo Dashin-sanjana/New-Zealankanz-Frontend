@@ -4,15 +4,21 @@ import { usePageTitle } from '../../../hooks/use-page-title'
 import { getAds } from '../../../services/ads.service'
 import { getCategories } from '../../../services/marketplace.service'
 import { AdGrid } from '../../../components/marketplace/ad-grid'
-import { Banner } from '../../../components/marketplace/banner'
+import { AdSlot } from '../../../components/marketplace/ad-slot'
+import { SearchBar } from '../../../components/marketplace/search-bar'
 import { Alert, ResultSummary } from '../../../components/ui/feedback'
-import { Link } from '../../../components/ui/link'
 import { PageFrame } from '../../../components/ui/page-frame'
 import NotFoundPage from '../../not-found/page'
 
-export default function CategoryPage({ slug }) {
+export default function CategoryPage({ slug, query }) {
   const [category, setCategory] = useState(() => categories.find((item) => item.slug === slug))
   const [loaded, setLoaded] = useState(false)
+  const keyword = query?.get('q') || query?.get('keyword') || ''
+  const subcategory = query?.get('subcategory') || ''
+  const location = query?.get('location') || ''
+  const minPrice = query?.get('minPrice') || ''
+  const maxPrice = query?.get('maxPrice') || ''
+  const sort = query?.get('sort') || ''
   usePageTitle(category?.name || 'Category', {
     description: category?.description
       ? category.description
@@ -33,24 +39,34 @@ export default function CategoryPage({ slug }) {
         setError(err.message)
         setLoaded(true)
       })
-    if (slug) getAds({ category: slug }).then(setAds).catch((err) => setError(err.message))
-  }, [slug])
+    if (slug) {
+      getAds({ keyword, category: slug, subcategory, location, minPrice, maxPrice, sort })
+        .then((items) => {
+          setAds(items)
+          setError('')
+        })
+        .catch((err) => setError(err.message))
+    }
+  }, [slug, keyword, subcategory, location, minPrice, maxPrice, sort])
 
   if (loaded && !category) return <NotFoundPage />
   if (!category) return <PageFrame title="Loading category" subtitle="Fetching category details." />
 
   return (
     <PageFrame title={category.name} subtitle="Browse approved listings in this marketplace category.">
-      <Banner placement="CATEGORY" />
-      {category.children.length > 0 && (
-        <div className="pill-row">
-          {category.children.map((child) => (
-            <Link key={child.id || child} to={`/search?category=${category.slug}&subcategory=${child.slug || child}`} className="pill">
-              {child.name || child}
-            </Link>
-          ))}
-        </div>
-      )}
+      <AdSlot name="CATEGORY_TOP" />
+      <SearchBar
+        actionPath={`/category/${category.slug}`}
+        fixedCategory
+        defaultKeyword={keyword}
+        defaultCategory={category.slug}
+        defaultSubcategory={subcategory}
+        defaultLocation={location}
+        defaultMinPrice={minPrice}
+        defaultMaxPrice={maxPrice}
+        defaultSort={sort}
+      />
+      <AdSlot name="CATEGORY_AFTER_SEARCH" />
       {error && <Alert type="info" message={error} />}
       <ResultSummary count={ads.length} />
       <AdGrid ads={ads} />

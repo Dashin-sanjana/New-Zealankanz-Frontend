@@ -3,11 +3,18 @@ import { categories } from '../../data/marketplace'
 import { getCategories } from '../../services/marketplace.service'
 import { Link } from '../ui/link'
 
-const categoryMeta = {
+interface CategoryMetaItem {
+  description: string
+  icon: string
+  accent: string
+  highlights: string[]
+}
+
+const categoryMeta: Record<string, CategoryMetaItem> = {
   property: {
     description: 'Homes, rentals, and flatmates across NZ',
     icon: '🏠',
-    accent: 'coral',
+    accent: 'gold',
     highlights: ['Sale', 'Rent', 'Flatmates'],
   },
   motor: {
@@ -19,19 +26,27 @@ const categoryMeta = {
   jobs: {
     description: 'Local roles, shifts, and flexible work',
     icon: '💼',
-    accent: 'blue',
+    accent: 'gold',
     highlights: ['Full-time', 'Part-time', 'Casual'],
   },
   services: {
     description: 'Trades, cleaning, repairs, and local help',
     icon: '🔧',
-    accent: 'green',
+    accent: 'gold',
     highlights: ['Trades', 'Cleaning', 'Repairs'],
   },
 }
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+  count: number
+  children?: Array<any>
+}
+
 export function CategoryGrid() {
-  const [items, setItems] = useState(categories)
+  const [items, setItems] = useState<Category[]>(categories)
 
   useEffect(() => {
     getCategories().then(setItems).catch(() => setItems([]))
@@ -41,7 +56,7 @@ export function CategoryGrid() {
     <div className="category-grid">
       {items.map((category) => (
         <Link
-          className={`category-card category-card-${categoryMeta[category.id]?.accent || 'coral'}`}
+          className={`category-card category-card-${categoryMeta[category.id]?.accent || 'gold'}`}
           key={category.id}
           to={`/category/${category.slug}`}
         >
@@ -57,7 +72,7 @@ export function CategoryGrid() {
             {categoryMeta[category.id]?.description || `${category.count} listings`}
           </span>
           <span className="category-tags" aria-label={`${category.name} subcategories`}>
-            {(categoryMeta[category.id]?.highlights || category.children).slice(0, 3).map((item) => (
+            {(categoryMeta[category.id]?.highlights || category.children || []).slice(0, 3).map((item: any) => (
               <small key={item.id || item}>{item.name || item}</small>
             ))}
           </span>

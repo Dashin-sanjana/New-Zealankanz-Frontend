@@ -91,6 +91,65 @@ export const fallbackAds = [
 ]
 
 export const fallbackBanners = {
+  HOME_AFTER_HERO: [
+    {
+      sponsor: 'Southern Solar Co.',
+      title: 'Winter solar installs from $89/week',
+      description: 'Book a free home energy check across Auckland and Hamilton.',
+      imageUrl: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/contact',
+    },
+    {
+      sponsor: 'KiwiMove Rentals',
+      title: 'Moving this weekend?',
+      description: 'Vans, trailers, and moving boxes ready for same-day pickup.',
+      imageUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/category/services',
+    },
+    {
+      sponsor: 'Aro Street Cafe',
+      title: 'Two coffees for $9 before 10am',
+      description: 'Show this marketplace ad in store, Monday to Friday.',
+      imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/location/wellington',
+    },
+  ],
+  HOME_SIDEBAR: [
+    {
+      sponsor: 'Bright Clean',
+      title: 'End of tenancy cleaning deals',
+      description: 'Fixed-price cleaning for rentals and small offices.',
+      imageUrl: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=600&q=80',
+      linkUrl: '/category/services',
+    },
+  ],
+  CATEGORY_TOP: [
+    {
+      sponsor: 'Marketplace partner',
+      title: 'Advertise beside category shoppers',
+      description: 'Reach buyers as they browse local listings.',
+      imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/contact',
+    },
+  ],
+  LISTING_SIDEBAR: [
+    {
+      sponsor: 'NZ Delivery',
+      title: 'Need this item delivered?',
+      description: 'Compare local delivery quotes before you buy.',
+      imageUrl: 'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/contact',
+    },
+  ],
+  FOOTER_TOP: [
+    {
+      sponsor: 'NewZealankans',
+      title: 'Promote your local business',
+      description: 'Simple ad placements for local services, shops, and events.',
+      imageUrl: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80',
+      linkUrl: '/contact',
+    },
+  ],
   HOME: [
     {
       sponsor: 'Southern Solar Co.',
@@ -151,6 +210,16 @@ export const fallbackBanners = {
     },
   ],
 }
+
+export const adPlacementOptions = [
+  ['HOME_AFTER_HERO', 'Home: after hero'],
+  ['HOME_SIDEBAR', 'Home: sidebar'],
+  ['CATEGORY_TOP', 'Category: top'],
+  ['CATEGORY_AFTER_SEARCH', 'Category: after advanced search'],
+  ['SEARCH_TOP', 'Search results: top'],
+  ['LISTING_SIDEBAR', 'Listing detail: sidebar'],
+  ['FOOTER_TOP', 'Footer: top'],
+]
 
 export const adminCards = [
   ['Pending Ads', '/admin/ads/pending', 'Review, approve, reject, or feature submitted listings.'],

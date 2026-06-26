@@ -3,13 +3,15 @@ import { categories, locations } from '../../data/marketplace'
 import { navigate } from '../../lib/navigation'
 import { getCategories, getLocations } from '../../services/marketplace.service'
 
-function getSubcategoryOptions(items) {
-  return items.flatMap((category) =>
-    (category.children || []).map((child) => ({
-      value: child.slug || child,
-      label: `${category.name} / ${child.name || child}`,
-    })),
-  )
+function getSubcategoryOptions(items, categorySlug = '') {
+  return items
+    .filter((category) => !categorySlug || category.slug === categorySlug)
+    .flatMap((category) =>
+      (category.children || []).map((child) => ({
+        value: child.slug || child,
+        label: `${category.name} / ${child.name || child}`,
+      })),
+    )
 }
 
 export function SearchBar({
@@ -20,6 +22,10 @@ export function SearchBar({
   defaultMinPrice = '',
   defaultMaxPrice = '',
   defaultSort = '',
+  actionPath = '/search',
+  fixedCategory = false,
+  showAdvancedFilters = true,
+  simple = false,
 }) {
   const [categoryOptions, setCategoryOptions] = useState(categories)
   const [locationOptions, setLocationOptions] = useState(locations)
@@ -31,7 +37,7 @@ export function SearchBar({
 
   return (
     <form
-      className="search-bar"
+      className={`search-bar${fixedCategory ? ' search-bar-fixed-category' : ''}${simple ? ' search-bar-simple' : ''}`}
       onSubmit={(event) => {
         event.preventDefault()
         const form = new FormData(event.currentTarget)
@@ -39,7 +45,7 @@ export function SearchBar({
         for (const [key, value] of form.entries()) {
           if (value) params.set(key, value)
         }
-        navigate(`/search?${params.toString()}`)
+        navigate(`${actionPath}?${params.toString()}`)
       }}
     >
       {/* Row 1 — primary search */}
@@ -52,25 +58,31 @@ export function SearchBar({
           <input id="sb-q" name="q" defaultValue={defaultKeyword} placeholder="Search listings, e.g. Toyota, 2-bed flat…" />
         </div>
 
-        <div className="search-field">
-          <label htmlFor="sb-category" className="search-label">Category</label>
-          <select id="sb-category" name="category" defaultValue={defaultCategory}>
-            <option value="">All categories</option>
-            {categoryOptions.map((item) => (
-              <option key={item.id} value={item.slug}>{item.name}</option>
-            ))}
-          </select>
-        </div>
+        {simple ? null : fixedCategory ? (
+          <input type="hidden" name="category" defaultValue={defaultCategory} />
+        ) : (
+          <div className="search-field">
+            <label htmlFor="sb-category" className="search-label">Category</label>
+            <select id="sb-category" name="category" defaultValue={defaultCategory}>
+              <option value="">All categories</option>
+              {categoryOptions.map((item) => (
+                <option key={item.id} value={item.slug}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        <div className="search-field">
-          <label htmlFor="sb-location" className="search-label">Location</label>
-          <select id="sb-location" name="location" defaultValue={defaultLocation}>
-            <option value="">All NZ cities</option>
-            {locationOptions.map((item) => (
-              <option key={item.id} value={item.slug}>{item.name}</option>
-            ))}
-          </select>
-        </div>
+        {!simple && (
+          <div className="search-field">
+            <label htmlFor="sb-location" className="search-label">Location</label>
+            <select id="sb-location" name="location" defaultValue={defaultLocation}>
+              <option value="">All NZ cities</option>
+              {locationOptions.map((item) => (
+                <option key={item.id} value={item.slug}>{item.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <button className="primary-button search-submit" type="submit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -78,38 +90,39 @@ export function SearchBar({
         </button>
       </div>
 
-      {/* Row 2 — filters */}
-      <div className="search-row-filters">
-        <div className="search-field">
-          <label htmlFor="sb-subcategory" className="search-label">Subcategory</label>
-          <select id="sb-subcategory" name="subcategory" defaultValue={defaultSubcategory}>
-            <option value="">All subcategories</option>
-            {getSubcategoryOptions(categoryOptions).map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-        </div>
+      {showAdvancedFilters && (
+        <div className="search-row-filters">
+          <div className="search-field">
+            <label htmlFor="sb-subcategory" className="search-label">Subcategory</label>
+            <select id="sb-subcategory" name="subcategory" defaultValue={defaultSubcategory}>
+              <option value="">All subcategories</option>
+              {getSubcategoryOptions(categoryOptions, fixedCategory ? defaultCategory : '').map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="search-field">
-          <label htmlFor="sb-min" className="search-label">Min price ($)</label>
-          <input id="sb-min" name="minPrice" type="number" min="0" defaultValue={defaultMinPrice} placeholder="No minimum" />
-        </div>
+          <div className="search-field">
+            <label htmlFor="sb-min" className="search-label">Min price ($)</label>
+            <input id="sb-min" name="minPrice" type="number" min="0" defaultValue={defaultMinPrice} placeholder="No minimum" />
+          </div>
 
-        <div className="search-field">
-          <label htmlFor="sb-max" className="search-label">Max price ($)</label>
-          <input id="sb-max" name="maxPrice" type="number" min="0" defaultValue={defaultMaxPrice} placeholder="No maximum" />
-        </div>
+          <div className="search-field">
+            <label htmlFor="sb-max" className="search-label">Max price ($)</label>
+            <input id="sb-max" name="maxPrice" type="number" min="0" defaultValue={defaultMaxPrice} placeholder="No maximum" />
+          </div>
 
-        <div className="search-field">
-          <label htmlFor="sb-sort" className="search-label">Sort by</label>
-          <select id="sb-sort" name="sort" defaultValue={defaultSort}>
-            <option value="">Newest first</option>
-            <option value="price_asc">Price: low → high</option>
-            <option value="price_desc">Price: high → low</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+          <div className="search-field">
+            <label htmlFor="sb-sort" className="search-label">Sort by</label>
+            <select id="sb-sort" name="sort" defaultValue={defaultSort}>
+              <option value="">Newest first</option>
+              <option value="price_asc">Price: low → high</option>
+              <option value="price_desc">Price: high → low</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
     </form>
   )
 }

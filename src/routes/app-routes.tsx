@@ -62,7 +62,7 @@ export default function AppRoutes({ route, auth }) {
   if (pathname === paths.adminLocations) return <RequireAdmin auth={auth}><AdminLocationsPage /></RequireAdmin>
   if (pathname === paths.adminBanners) return <RequireAdmin auth={auth}><AdminBannersPage /></RequireAdmin>
   if (pathname === paths.adminUsers) return <RequireAdmin auth={auth}><AdminUsersPage /></RequireAdmin>
-  if (pathname.startsWith('/category/')) return <CategoryPage slug={pathname.split('/').pop()} />
+  if (pathname.startsWith('/category/')) return <CategoryPage slug={pathname.split('/').pop()} query={query} />
   if (pathname.startsWith('/location/')) return <LocationPage slug={pathname.split('/').pop()} />
   if (pathname.startsWith('/ads/')) return <AdDetailPage slug={pathname.split('/').pop()} />
   return <NotFoundPage />

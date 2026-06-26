@@ -3,7 +3,7 @@ import { navigate } from '../../../lib/navigation'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { loginAccount } from '../../../services/auth.service'
 
-export default function LoginPage({ auth }) {
+export default function LoginPage({ auth }: { auth: any }) {
   usePageTitle('Login')
   return (
     <AuthForm
@@ -18,7 +18,7 @@ export default function LoginPage({ auth }) {
       footerText="New to NewZealankans?"
       footerLinkLabel="Create account"
       footerLinkTo="/register"
-      onSubmit={async (form) => {
+      onSubmit={async (form: Record<string, any>) => {
         const result = await loginAccount({
           email: form.Email,
           password: form.Password,

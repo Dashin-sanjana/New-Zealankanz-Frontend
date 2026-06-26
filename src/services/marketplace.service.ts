@@ -1,4 +1,5 @@
 import { slugify } from '../lib/slugify'
+import { fallbackBanners } from '../data/marketplace'
 import { apiRequest, unwrapCollection } from './api'
 
 function normalizeCategory(category) {
@@ -44,8 +45,10 @@ export function getLocations() {
 }
 
 export function getBanners(placement) {
-  return apiRequest(`/banners/${placement}`).then((items) => {
-    const banners = Array.isArray(items) ? items : unwrapCollection(items)
-    return banners.map(normalizeBanner)
-  })
+  return apiRequest(`/banners/${placement}`)
+    .then((items) => {
+      const banners = Array.isArray(items) ? items : unwrapCollection(items)
+      return banners.map(normalizeBanner)
+    })
+    .catch(() => (fallbackBanners[placement] || []).map(normalizeBanner))
 }

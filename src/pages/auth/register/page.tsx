@@ -3,7 +3,7 @@ import { navigate } from '../../../lib/navigation'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { registerAccount, loginAccount } from '../../../services/auth.service'
 
-export default function RegisterPage({ auth }) {
+export default function RegisterPage({ auth }: { auth: any }) {
   usePageTitle('Register')
   return (
     <AuthForm
@@ -19,7 +19,7 @@ export default function RegisterPage({ auth }) {
       footerLinkLabel="Login"
       footerLinkTo="/login"
       successMessage="Account created! Check your email to verify your address, then continue to your dashboard."
-      onSubmit={async (form) => {
+      onSubmit={async (form: Record<string, any>) => {
         await registerAccount({
           firstName: form['Full name'],
           lastName: '',

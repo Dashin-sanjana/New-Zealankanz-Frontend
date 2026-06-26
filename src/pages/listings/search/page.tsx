@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { getAds } from '../../../services/ads.service'
 import { AdGrid } from '../../../components/marketplace/ad-grid'
+import { AdSlot } from '../../../components/marketplace/ad-slot'
 import { SearchBar } from '../../../components/marketplace/search-bar'
 import { Alert, ResultSummary } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
@@ -29,6 +30,7 @@ export default function SearchPage({ query }) {
 
   return (
     <PageFrame title="Search marketplace" subtitle="Search approved ads by keyword, category, and NZ city.">
+      <AdSlot name="SEARCH_TOP" />
       <SearchBar
         defaultKeyword={keyword}
         defaultCategory={category}

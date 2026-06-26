@@ -3,20 +3,20 @@ import { Input } from './fields'
 import { Alert } from '../ui/feedback'
 import { Link } from '../ui/link'
 
-function getInputType(field) {
+function getInputType(field: string): string {
   if (field.toLowerCase().includes('password')) return 'password'
   if (field.toLowerCase().includes('email')) return 'email'
   return 'text'
 }
 
-function getAutoComplete(field, disableAutofill) {
+function getAutoComplete(field: string, disableAutofill: boolean): string | undefined {
   if (!disableAutofill) return undefined
   if (field.toLowerCase().includes('password')) return 'new-password'
   return 'off'
 }
 
-function validateAuthForm(form, fields) {
-  const errors = {}
+function validateAuthForm(form: Record<string, any>, fields: string[]): Record<string, string> {
+  const errors: Record<string, string> = {}
   const isRegister = fields.includes('Full name')
 
   fields.forEach((field) => {
@@ -50,6 +50,22 @@ const authHighlights = [
   ['Admin reviewed', 'Listings stay moderated before they go live.'],
 ]
 
+interface AuthFormProps {
+  title: string
+  subtitle: string
+  fields: string[]
+  buttonLabel: string
+  onSubmit: (form: Record<string, any>) => void | Promise<void>
+  disableAutofill?: boolean
+  eyebrow?: string
+  panelTitle?: string
+  panelText?: string
+  footerText?: string
+  footerLinkLabel?: string
+  footerLinkTo?: string
+  successMessage?: string
+}
+
 export function AuthForm({
   title,
   subtitle,
@@ -64,9 +80,9 @@ export function AuthForm({
   footerLinkLabel,
   footerLinkTo,
   successMessage = 'Request submitted successfully.',
-}) {
+}: AuthFormProps) {
   const [submitted, setSubmitted] = useState(false)
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [apiError, setApiError] = useState('')
   const [loading, setLoading] = useState(false)
 

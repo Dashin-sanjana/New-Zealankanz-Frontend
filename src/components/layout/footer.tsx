@@ -1,4 +1,4 @@
-import { Banner } from '../marketplace/banner'
+import { AdSlot } from '../marketplace/ad-slot'
 import { Link } from '../ui/link'
 
 export function Footer() {
@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-banner-slot">
-        <Banner placement="FOOTER" />
+        <AdSlot name="FOOTER_TOP" />
       </div>
       <div className="footer-inner">
         <div className="footer-brand">

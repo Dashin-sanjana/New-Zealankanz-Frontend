@@ -3,13 +3,35 @@ import { handleImageError } from '../../lib/images'
 import { getBanners } from '../../services/marketplace.service'
 import { Link } from '../ui/link'
 
-export function Banner({ placement, compact = false }) {
+export function Banner({ placement, compact = false, fallbackPlacements = [] }) {
   const [banners, setBanners] = useState([])
   const banner = banners[0]
+  const placementKey = [placement, ...fallbackPlacements].filter(Boolean).join('|')
 
   useEffect(() => {
-    getBanners(placement).then(setBanners).catch(() => setBanners([]))
-  }, [placement])
+    let active = true
+    const placements = placementKey.split('|').filter(Boolean)
+
+    async function loadBanners() {
+      for (const item of placements) {
+        try {
+          const nextBanners = await getBanners(item)
+          if (nextBanners.length > 0) {
+            if (active) setBanners(nextBanners)
+            return
+          }
+        } catch {
+          // Try the next configured placement before hiding the slot.
+        }
+      }
+      if (active) setBanners([])
+    }
+
+    loadBanners()
+    return () => {
+      active = false
+    }
+  }, [placementKey])
 
   if (!banner) return null
 

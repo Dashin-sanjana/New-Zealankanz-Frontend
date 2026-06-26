@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AdminSimplePage } from '../../../components/admin/admin-simple-page'
+import { adPlacementOptions } from '../../../data/marketplace'
 import { Alert } from '../../../components/ui/feedback'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import {
@@ -121,8 +122,11 @@ export function AdminBannersPage() {
   async function addBanner() {
     const title = window.prompt('Banner title')
     const imageUrl = title ? window.prompt('Image URL') : ''
-    if (!title || !imageUrl) return
-    await createBanner({ title, imageUrl, placement: 'HOME', active: true }).then(() => { setSuccess('Banner added.'); load() }).catch((error) => setError(error.message))
+    const placement = imageUrl
+      ? window.prompt(`Placement key\n\n${adPlacementOptions.map(([key, label]) => `${key} - ${label}`).join('\n')}`, 'HOME_AFTER_HERO')
+      : ''
+    if (!title || !imageUrl || !placement) return
+    await createBanner({ title, imageUrl, placement, active: true }).then(() => { setSuccess('Banner added.'); load() }).catch((error) => setError(error.message))
   }
 
   return (
@@ -135,7 +139,8 @@ export function AdminBannersPage() {
         onAdd={addBanner}
         onEdit={(item) => {
           const title = window.prompt('Banner title', item.title)
-          if (title) updateBanner(item.id, { ...item, title }).then(() => { setSuccess('Banner updated.'); load() }).catch((error) => setError(error.message))
+          const placement = title ? window.prompt('Placement key', item.placement || 'HOME_AFTER_HERO') : ''
+          if (title && placement) updateBanner(item.id, { ...item, title, placement }).then(() => { setSuccess('Banner updated.'); load() }).catch((error) => setError(error.message))
         }}
         onDisable={(item) => deleteBanner(item.id).then(() => { setSuccess('Banner deleted.'); load() }).catch((error) => setError(error.message))}
       />

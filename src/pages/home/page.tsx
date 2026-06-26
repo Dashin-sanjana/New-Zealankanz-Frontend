@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react'
 import { quickTabs } from '../../data/marketplace'
 
-const heroImage = 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?auto=format&fit=crop&w=1200&q=80'
+const heroSlides = [
+  {
+    image: 'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?auto=format&fit=crop&w=1800&q=80',
+    title: 'New Zealand community marketplace',
+    text: 'Find homes, vehicles, jobs, services, and local deals in one trusted place.',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1800&q=80',
+    title: 'Property, motors, jobs, services',
+    text: 'Browse approved listings from communities across Aotearoa.',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1800&q=80',
+    title: 'Promote and discover locally',
+    text: 'Simple classifieds for buyers, sellers, and local businesses.',
+  },
+]
 import { getFeaturedAds } from '../../services/ads.service'
-import { handleImageError } from '../../lib/images'
 import { usePageTitle } from '../../hooks/use-page-title'
 import { AdGrid } from '../../components/marketplace/ad-grid'
-import { Banner } from '../../components/marketplace/banner'
-import { CategoryGrid } from '../../components/marketplace/category-grid'
+import { AdSlot } from '../../components/marketplace/ad-slot'
 import { LocationFilter } from '../../components/marketplace/location-filter'
 import { PopularSearches } from '../../components/marketplace/popular-searches'
 import { PromoStrip } from '../../components/marketplace/promo-strip'
@@ -20,6 +34,14 @@ const marketplaceStats = [
   ['216+', 'live listings'],
   ['11', 'NZ regions'],
   ['24h', 'review target'],
+]
+
+const homeCategoryTabs = [
+  ['🛍️', quickTabs[0][0], quickTabs[0][1]],
+  ['🏠', quickTabs[1][0], quickTabs[1][1]],
+  ['🚙', quickTabs[2][0], quickTabs[2][1]],
+  ['💼', quickTabs[3][0], quickTabs[3][1]],
+  ['🔧', quickTabs[4][0], quickTabs[4][1]],
 ]
 
 export default function HomePage() {
@@ -41,14 +63,30 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="hero-section marketplace-hero">
-        <div className="hero-copy">
-          <p className="eyebrow">New Zealand community classifieds</p>
-          <h1>Buy, sell, hire, and find local opportunities.</h1>
-          <p className="hero-intro">
-            A brighter local marketplace for homes, vehicles, jobs, services, and neighbourhood finds.
-          </p>
-          <SearchBar />
+      <section className="home-slider" aria-label="Marketplace highlights">
+        {heroSlides.map((slide) => (
+          <article className="home-slide" key={slide.title}>
+            <img src={slide.image} alt="" />
+            <div className="home-slide-copy">
+              <p className="eyebrow">New Zealand community classifieds</p>
+              <h1>{slide.title}</h1>
+              <p>{slide.text}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="home-search-section">
+        <div className="home-search-inner">
+          <SearchBar showAdvancedFilters={false} simple />
+          <nav className="home-category-tabs" aria-label="Popular categories">
+            {homeCategoryTabs.map(([icon, label, to]) => (
+              <Link key={label} to={to}>
+                <span aria-hidden="true">{icon}</span>
+                {label}
+              </Link>
+            ))}
+          </nav>
           <div className="hero-stats" aria-label="Marketplace highlights">
             {marketplaceStats.map(([value, label]) => (
               <span key={label}>
@@ -57,38 +95,11 @@ export default function HomePage() {
               </span>
             ))}
           </div>
-          <div className="quick-tabs" aria-label="Popular sections">
-            {quickTabs.map(([label, to]) => (
-              <Link key={label} to={to}>
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="hero-panel hero-listings">
-          <div className="hero-panel-cover">
-            <img src={heroImage} alt="NewZealankans — New Zealand marketplace" />
-            <div className="hero-panel-overlay">
-              <span className="hero-panel-badge">🇳🇿 New Zealand's local marketplace</span>
-            </div>
-          </div>
-          {ads.slice(0, 3).map((ad) => (
-            <Link className="mini-listing" key={ad.id} to={`/ads/${ad.slug}`}>
-              <img src={ad.image} alt={ad.title} onError={(event) => handleImageError(event, ad.title)} />
-              <span>
-                <strong>{ad.title}</strong>
-                <small>{ad.location} · {ad.price}</small>
-              </span>
-            </Link>
-          ))}
         </div>
       </section>
-      <Banner placement="HOME" />
+
+      <AdSlot name="HOME_AFTER_HERO" />
       <PromoStrip />
-      <section className="content-section">
-        <SectionHeader title="Browse by category" actionLabel="View all ads" actionTo="/search" />
-        <CategoryGrid />
-      </section>
       <section className="content-section two-column">
         <div>
           <SectionHeader title="Trade picks" actionLabel="Search listings" actionTo="/search" />
@@ -97,7 +108,7 @@ export default function HomePage() {
         </div>
         <aside className="sidebar">
           <LocationFilter />
-          <Banner placement="SIDEBAR" compact />
+          <AdSlot name="HOME_SIDEBAR" />
         </aside>
       </section>
       <PopularSearches />
