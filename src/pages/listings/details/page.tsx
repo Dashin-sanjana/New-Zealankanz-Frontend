@@ -3,6 +3,7 @@ import { handleImageError } from '../../../lib/images'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { getAdBySlug } from '../../../services/ads.service'
 import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../../../services/watchlist.service'
+import { submitContact } from '../../../services/contact.service'
 import { AdSlot } from '../../../components/marketplace/ad-slot'
 import { Alert } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
@@ -68,20 +69,7 @@ function EnquiryForm({ ad }) {
       message: String(form.get('message') || ''),
     }
     try {
-      const res = await fetch(
-        (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '') + '/contact',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        }
-      )
-      if (!res.ok) {
-        const text = await res.text()
-        let msg = 'Could not send enquiry.'
-        try { msg = JSON.parse(text)?.message || msg } catch {}
-        throw new Error(msg)
-      }
+      await submitContact(body)
       setStatus('sent')
       ;(event.target as HTMLFormElement).reset()
     } catch (err: any) {

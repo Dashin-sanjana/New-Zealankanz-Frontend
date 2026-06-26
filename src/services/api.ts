@@ -1,5 +1,7 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '')
 export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '')
+const NETWORK_ERROR_MESSAGE = 'API service is unavailable. Please check that the backend is running and try again.'
+const SERVER_ERROR_MESSAGE = 'API server error. Please try again in a moment.'
 
 const AUTH_STORAGE_KEY = 'nzk_auth'
 
@@ -37,6 +39,17 @@ function getErrorMessage(payload, fallback) {
   return payload.message || payload.error || fallback
 }
 
+async function parseResponsePayload(response) {
+  const text = await response.text()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return { message: text }
+  }
+}
+
 export async function apiRequest(path, options = {}) {
   const endpoint = path.startsWith('/') ? path : `/${path}`
   const isFormData = options.body instanceof FormData
@@ -48,18 +61,24 @@ export async function apiRequest(path, options = {}) {
     ...options.headers,
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
+  let response
+
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    })
+  } catch (error) {
+    throw new ApiError(NETWORK_ERROR_MESSAGE, 0, error)
+  }
 
   if (response.status === 204) return null
 
-  const text = await response.text()
-  const payload = text ? JSON.parse(text) : null
+  const payload = await parseResponsePayload(response)
 
   if (!response.ok) {
-    throw new ApiError(getErrorMessage(payload, `API request failed with status ${response.status}`), response.status, payload)
+    const fallback = response.status >= 500 ? SERVER_ERROR_MESSAGE : `API request failed with status ${response.status}`
+    throw new ApiError(getErrorMessage(payload, fallback), response.status, payload)
   }
 
   return payload

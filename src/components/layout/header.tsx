@@ -1,4 +1,5 @@
 import { Link } from '../ui/link'
+import newzealankanzLogo from '../../assets/newzealankanz-logo.jpg'
 
 export function Header({ auth, menuOpen, setMenuOpen }) {
   const navItems = [
@@ -10,12 +11,8 @@ export function Header({ auth, menuOpen, setMenuOpen }) {
 
   return (
     <header className="site-header">
-      <Link to="/" className="brand" onClick={() => setMenuOpen(false)}>
-        <span className="brand-mark">NZ</span>
-        <span>
-          <strong>NewZealankans</strong>
-          <small>Marketplace</small>
-        </span>
+      <Link to="/" className="brand" aria-label="NewZealankans Marketplace home" onClick={() => setMenuOpen(false)}>
+        <img className="brand-logo" src={newzealankanzLogo} alt="NewZealankans" />
       </Link>
       <button className="menu-button" type="button" onClick={() => setMenuOpen(!menuOpen)}>
         Menu
