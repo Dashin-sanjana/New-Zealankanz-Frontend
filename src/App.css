@@ -807,7 +807,7 @@ textarea { resize: vertical; }
 }
 
 .category-icon {
-  display: inline-flex;
+  display: block;
   width: 48px;
   height: 48px;
   align-items: center;
@@ -1993,7 +1993,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .filter-drawer-actions .primary-button { margin-left: auto; }
 .filter-dialog :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
-.home-hero { gap: 24px; padding-block: 22px; }
+.home-hero { gap: 24px; padding: 32px max(20px, calc((100vw - 1200px) / 2)) 22px; }
 .home-categories { padding-top: 16px; padding-bottom: 8px; }
 .home-listings { padding-top: 12px; padding-bottom: 10px; }
 .home-listings .section-header { margin-bottom: 10px; }
@@ -2001,7 +2001,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .home-categories .category-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .home-categories .category-card { min-height: 48px; padding: 8px 10px; gap: 7px; }
 .home-categories .category-card-top { flex: 0 0 auto; width: 25px; height: 25px; }
-.home-categories .category-icon { width: 15px; height: 15px; }
+.home-categories .category-icon { width: 19px; height: 19px; padding: 0; }
 .home-categories .category-card strong { min-width: 0; font-size: 12px; line-height: 1.2; }
 .home-categories .category-tags, .home-categories .category-description, .home-categories .category-card-bg { display: none; }
 .home-advertising { padding: 12px 0 6px; }
@@ -2027,7 +2027,7 @@ button:disabled { cursor: wait; opacity: .65; }
   .home-categories .category-grid { display: flex; max-width: 100%; gap: 8px; overflow-x: auto; overscroll-behavior-inline: contain; padding: 2px 1px 8px; scroll-snap-type: x proximity; scrollbar-width: thin; }
   .home-categories .category-card { display: flex; min-width: max-content; min-height: 44px; flex: 0 0 auto; align-items: center; gap: 7px; padding: 7px 10px; scroll-snap-align: start; }
   .home-categories .category-card-top { flex: 0 0 auto; width: 25px; height: 25px; }
-  .home-categories .category-icon { width: 15px; height: 15px; }
+  .home-categories .category-icon { width: 19px; height: 19px; padding: 0; }
   .home-categories .category-card strong { min-width: 0; font-size: 12px; line-height: 1.2; }
   .home-categories .category-tags, .home-categories .category-description, .home-categories .category-card-bg { display: none; }
 }
