@@ -2019,11 +2019,12 @@ button:disabled { cursor: wait; opacity: .65; }
 .ad-card-body p { display: none; }
 .ad-view-btn { min-height: 42px; padding: 7px 10px; justify-content: center; }
 .search-bar .search-field input, .search-bar .search-field select { min-height: 46px; }
-.search-bar .search-row-primary .search-field { padding: 2px 12px; }
-.search-bar .search-row-primary .search-label { margin: 1px 0; font-size: 10px; line-height: 12px; }
-.search-bar .search-row-primary .search-label svg { width: 12px; height: 12px; }
+.search-bar:not(.search-bar-simple) { border-radius: 16px; }
+.search-bar .search-row-primary .search-field { padding: 4px 14px; }
+.search-bar .search-row-primary .search-label { margin: 0 0 2px; font-size: 11px; line-height: 14px; }
+.search-bar .search-row-primary .search-label svg { width: 14px; height: 14px; }
 .search-bar .search-row-primary .search-field input,
-.search-bar .search-row-primary .search-field select { min-height: 34px; }
+.search-bar .search-row-primary .search-field select { min-height: 40px; }
 
 @media (min-width: 981px) {
   .home-hero { gap: 20px; padding: 22px max(20px, calc((100vw - 1200px) / 2)) 18px; }
