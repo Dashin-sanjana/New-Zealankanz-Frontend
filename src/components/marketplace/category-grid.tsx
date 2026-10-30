@@ -48,7 +48,7 @@ export function CategoryGrid() {
   }, [])
 
   return (
-    <div className="category-grid">
+    <div className="category-grid" role="group" aria-label="Marketplace categories" tabIndex={0}>
       {items.map((category) => (
         <Link
           className="category-card"

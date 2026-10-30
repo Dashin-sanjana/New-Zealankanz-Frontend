@@ -25,7 +25,7 @@ export default function HomePage() {
     setLoading(true)
     setFeaturedError('')
     setLatestError('')
-    Promise.allSettled([getFeaturedAds(), getAds()])
+    Promise.allSettled([getFeaturedAds(), getAds({ limit: 6 })])
       .then(([featuredResult, latestResult]) => {
         const featured = featuredResult.status === 'fulfilled' ? featuredResult.value : []
         if (active && featuredResult.status === 'fulfilled') setFeaturedAds(featured)
@@ -33,7 +33,7 @@ export default function HomePage() {
 
         if (active && latestResult.status === 'fulfilled') {
           const featuredIds = new Set(featured.map((ad: MarketplaceAd) => ad.id))
-          setLatestAds(latestResult.value.filter((ad: MarketplaceAd) => !featuredIds.has(ad.id)))
+          setLatestAds(latestResult.value.filter((ad: MarketplaceAd) => !featuredIds.has(ad.id)).slice(0, 4))
         } else if (active && latestResult.status === 'rejected') {
           setLatestError(latestResult.reason instanceof Error ? latestResult.reason.message : 'Latest listings are temporarily unavailable.')
         }
@@ -50,7 +50,7 @@ export default function HomePage() {
           <h1>Good finds start close to home.</h1>
           <p>Discover homes, vehicles, jobs and services from people across New Zealand.</p>
         </div>
-        <SearchBar />
+        <SearchBar preserveKeyword />
       </section>
 
       <section className="content-section home-categories" aria-label="Browse categories">
@@ -77,25 +77,17 @@ export default function HomePage() {
           </div>
           <span>SPONSORED</span>
         </div>
-        <AdSlot name="HOME_AFTER_HERO" emptyMessage="No sponsored advertisements are available right now." />
-      </section>
-
-      <section className="home-advertising home-advertising-secondary">
-        <div className="home-advertising-heading">
-          <div>
-            <p className="eyebrow">Reach local customers</p>
-            <h2>More from local businesses</h2>
-          </div>
-          <span>SPONSORED</span>
+        <div className="home-advertising-grid">
+          <AdSlot name="HOME_AFTER_HERO" />
+          <AdSlot name="HOME_SIDEBAR" />
         </div>
-        <AdSlot name="HOME_SIDEBAR" />
       </section>
 
       <section className="content-section home-locations">
         <LocationFilter />
       </section>
 
-      <PopularSearches />
+      <PopularSearches ads={latestAds} />
     </>
   )
 }

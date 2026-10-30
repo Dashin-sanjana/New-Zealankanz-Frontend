@@ -3,6 +3,9 @@ import type { Banner, CategoryOption, LocationOption } from '../types/marketplac
 import { apiRequest, unwrapCollection } from './api'
 
 type RecordValue = Record<string, unknown>
+let categoryCache: CategoryOption[] | null = null
+let categoryCacheAt = 0
+const CATEGORY_CACHE_TTL_MS = 60_000
 
 function asRecord(value: unknown): RecordValue {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {}
@@ -27,6 +30,20 @@ function normalizeCategory(value: unknown): CategoryOption {
     description: asText(category.description) || undefined,
     count: Number(category.count || category.listingCount || category.adsCount || asRecord(category._count).ads || 0),
     children,
+    parentId: asText(category.parentId) || undefined,
+    fields: Array.isArray(category.fields) ? category.fields.map((entry) => {
+      const field = asRecord(entry)
+      return {
+        key: asText(field.key), label: asText(field.label),
+        type: (['text', 'number', 'select', 'textarea'].includes(asText(field.type)) ? asText(field.type) : 'text') as 'text' | 'number' | 'select' | 'textarea',
+        required: Boolean(field.required), filterable: Boolean(field.filterable),
+        options: Array.isArray(field.options) ? field.options.filter((option): option is string => typeof option === 'string') : undefined,
+        min: typeof field.min === 'number' ? field.min : undefined,
+        max: typeof field.max === 'number' ? field.max : undefined,
+        unit: asText(field.unit) || undefined,
+      }
+    }) : undefined,
+    capabilities: Array.isArray(category.capabilities) ? category.capabilities.filter((value): value is string => typeof value === 'string') : undefined,
   }
 }
 
@@ -55,7 +72,19 @@ function normalizeBanner(value: unknown): Banner {
 }
 
 export function getCategories(): Promise<CategoryOption[]> {
-  return apiRequest('/categories').then((result) => unwrapCollection(result).map(normalizeCategory))
+  if (categoryCache && Date.now() - categoryCacheAt < CATEGORY_CACHE_TTL_MS) return Promise.resolve(categoryCache)
+  return apiRequest('/categories').then((result) => {
+    categoryCache = unwrapCollection(result).map(normalizeCategory)
+    categoryCacheAt = Date.now()
+    return categoryCache
+  })
+}
+
+export async function getMarketplaceCapabilities(): Promise<string[]> {
+  try {
+    const categories = await getCategories()
+    return categories.find((category) => category.capabilities?.length)?.capabilities || []
+  } catch { return [] }
 }
 
 export function getLocations(): Promise<LocationOption[]> {

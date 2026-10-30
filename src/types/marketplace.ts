@@ -5,6 +5,21 @@ export interface CategoryOption {
   count?: number
   description?: string
   children: Array<CategoryOption | string>
+  parentId?: string
+  fields?: CategoryField[]
+  capabilities?: string[]
+}
+
+export interface CategoryField {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'select' | 'textarea'
+  required?: boolean
+  filterable?: boolean
+  options?: string[]
+  min?: number
+  max?: number
+  unit?: string
 }
 
 export interface LocationOption {

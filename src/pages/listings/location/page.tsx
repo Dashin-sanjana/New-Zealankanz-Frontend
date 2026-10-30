@@ -5,14 +5,23 @@ import { getAdsPage } from '../../../services/ads.service'
 import type { MarketplaceAd } from '../../../services/ads.service'
 import { getLocations } from '../../../services/marketplace.service'
 import { AdGrid } from '../../../components/marketplace/ad-grid'
+import { DesktopFilterSidebar } from '../../../components/marketplace/desktop-filter-sidebar'
 import { Alert, ResultSummary } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
+import { SearchBar } from '../../../components/marketplace/search-bar'
 import NotFoundPage from '../../not-found/page'
 import { navigateToPage } from '../../../lib/navigation'
 
 interface LocationOption { id: string; name: string; slug: string }
 
 export default function LocationPage({ slug, query }: { slug: string; query: URLSearchParams }) {
+  const keyword = query.get('q') || query.get('keyword') || ''
+  const category = query.get('category') || ''
+  const subcategory = query.get('subcategory') || ''
+  const minPrice = query.get('minPrice') || ''
+  const maxPrice = query.get('maxPrice') || ''
+  const sort = query.get('sort') || ''
+  const attributes = query.get('attributes') || ''
   const page = Math.max(Number.parseInt(query.get('page') || '1', 10) || 1, 1)
   const [location, setLocation] = useState<LocationOption | null>(() => locations.find((item) => item.slug === slug) || null)
   const [loaded, setLoaded] = useState(false)
@@ -51,7 +60,7 @@ export default function LocationPage({ slug, query }: { slug: string; query: URL
         }
       })
     if (slug) {
-      getAdsPage({ location: slug, page })
+      getAdsPage({ keyword, category, subcategory, location: slug, minPrice, maxPrice, sort, attributes, page })
         .then((result) => {
           if (active) {
             setAds(result.ads)
@@ -62,23 +71,29 @@ export default function LocationPage({ slug, query }: { slug: string; query: URL
         .finally(() => { if (active) setLoadingAds(false) })
     }
     return () => { active = false }
-  }, [slug, page, retry])
+  }, [slug, keyword, category, subcategory, minPrice, maxPrice, sort, attributes, page, retry])
 
   if (loaded && !location) return <NotFoundPage />
   if (!location) return <PageFrame title="Loading location" subtitle="Fetching location details." />
 
   return (
     <PageFrame title={location.name} subtitle="Approved ads available in this city or region.">
+      <SearchBar defaultKeyword={keyword} defaultCategory={category} defaultSubcategory={subcategory} defaultLocation={slug} defaultMinPrice={minPrice} defaultMaxPrice={maxPrice} defaultSort={sort} defaultAttributes={attributes} />
       {locationError && <Alert type="info" message="Location details couldn’t be refreshed. You can still browse this location." onRetry={() => setRetry((value) => value + 1)} compact />}
-      {error && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} />}
-      {loadingAds && ads.length === 0 && <p role="status">Loading listings…</p>}
-      <ResultSummary count={pageInfo.total} failed={Boolean(error)} loading={loadingAds} />
-      <AdGrid
-        ads={ads}
-        showEmptyState={!loadingAds && !error}
-        pagination={pageInfo}
-        onPageChange={(nextPage) => navigateToPage(`/location/${slug}`, query, nextPage)}
-      />
+      <div className="marketplace-results-layout">
+        <DesktopFilterSidebar query={query} actionPath="/search" initialLocation={slug} />
+        <div className="marketplace-results-main">
+          {error && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} />}
+          {loadingAds && ads.length === 0 && <p role="status">Loading listings…</p>}
+          <ResultSummary count={pageInfo.total} failed={Boolean(error)} loading={loadingAds} />
+          <AdGrid
+            ads={ads}
+            showEmptyState={!loadingAds && !error}
+            pagination={pageInfo}
+            onPageChange={(nextPage) => navigateToPage(`/location/${slug}`, query, nextPage)}
+          />
+        </div>
+      </div>
     </PageFrame>
   )
 }

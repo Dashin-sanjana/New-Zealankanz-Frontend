@@ -1,6 +1,8 @@
 import { slugify } from '../lib/slugify'
 import { fallbackImage } from '../lib/images'
 import { API_ORIGIN, apiRequest, unwrapCollection } from './api'
+import { getCategories, getMarketplaceCapabilities } from './marketplace.service'
+import type { CategoryOption } from '../types/marketplace'
 
 export interface MarketplaceAd {
   id: string
@@ -26,6 +28,7 @@ export interface MarketplaceAd {
   contactPhone: string
   rejectionReason?: string
   createdAt?: string
+  attributes?: Record<string, string | number | boolean>
 }
 
 type RawRecord = Record<string, unknown>
@@ -116,6 +119,9 @@ export function normalizeAd(input: unknown): MarketplaceAd {
     contactPhone: asText(ad.contactPhone),
     rejectionReason: asText(ad.rejectionReason) || undefined,
     createdAt: asText(ad.createdAt) || undefined,
+    attributes: Object.keys(asRecord(ad.attributes)).length
+      ? Object.fromEntries(Object.entries(asRecord(ad.attributes)).map(([key, value]) => [key, typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? value : JSON.stringify(value)]))
+      : undefined,
   }
 }
 
@@ -131,7 +137,7 @@ export function getFeaturedAds() {
   return apiRequest('/ads?featured=true').then((ads) => normalizeAds(ads).filter((ad) => ad.featured))
 }
 
-interface AdSearchFilters {
+export interface AdSearchFilters {
   keyword?: string
   category?: string
   subcategory?: string
@@ -140,6 +146,7 @@ interface AdSearchFilters {
   minPrice?: string
   maxPrice?: string
   sort?: string
+  attributes?: string
   page?: number
   limit?: number
 }
@@ -151,7 +158,7 @@ export interface AdsPage {
     page: number
     limit: number
     pages: number
-    localFilterScope?: { complete: boolean; scanned: number; baseTotal: number }
+    localFilterScope?: { complete: boolean; scanned: number; baseTotal: number; reason?: 'filters' | 'category' }
   }
 }
 
@@ -162,6 +169,8 @@ function metaNumber(meta: RawRecord, key: string, fallback: number) {
 
 const LOCAL_FILTER_PAGE_SIZE = 100
 const LOCAL_FILTER_MAX_PAGES = 20
+const MAX_DESCENDANT_CATEGORIES = 20
+const MAX_DESCENDANT_PAGE_REQUESTS = 40
 
 function readPage(result: unknown, page: number, limit: number): AdsPage {
   const meta = asRecord(asRecord(result).meta)
@@ -180,14 +189,52 @@ function readPage(result: unknown, page: number, limit: number): AdsPage {
   }
 }
 
-function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort'>) {
+type AttributeFilterValue = string | number | boolean | { min?: number; max?: number }
+
+function parseAttributeFilters(value?: string): Record<string, AttributeFilterValue> {
+  if (!value) return {}
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.entries(parsed).reduce<Record<string, AttributeFilterValue>>((result, [key, entry]) => {
+      if (typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean') {
+        result[key] = entry
+      } else if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const range = entry as Record<string, unknown>
+        const min = typeof range.min === 'number' ? range.min : undefined
+        const max = typeof range.max === 'number' ? range.max : undefined
+        if (min !== undefined || max !== undefined) result[key] = { min, max }
+      }
+      return result
+    }, {})
+  } catch {
+    return {}
+  }
+}
+
+function matchesAttributes(ad: MarketplaceAd, filters: Record<string, AttributeFilterValue>) {
+  return Object.entries(filters).every(([key, expected]) => {
+    const actual = ad.attributes?.[key]
+    if (actual === undefined) return false
+    if (typeof expected === 'object' && expected !== null) {
+      const value = Number(actual)
+      return Number.isFinite(value)
+        && (expected.min === undefined || value >= expected.min)
+        && (expected.max === undefined || value <= expected.max)
+    }
+    return String(actual).toLocaleLowerCase() === String(expected).toLocaleLowerCase()
+  })
+}
+
+function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>) {
   const min = filters.minPrice ? Number(filters.minPrice) : undefined
   const max = filters.maxPrice ? Number(filters.maxPrice) : undefined
+  const attributeFilters = parseAttributeFilters(filters.attributes)
   const filtered = ads.filter((ad) => {
     if ((min !== undefined || max !== undefined) && ad.priceValue === null) return false
     if (min !== undefined && ad.priceValue! < min) return false
     if (max !== undefined && ad.priceValue! > max) return false
-    return true
+    return matchesAttributes(ad, attributeFilters)
   })
 
   if (filters.sort === 'price_asc' || filters.sort === 'price_desc') {
@@ -195,7 +242,7 @@ function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 
     filtered.sort((a, b) => {
       if (a.priceValue === null) return b.priceValue === null ? 0 : 1
       if (b.priceValue === null) return -1
-      return (a.priceValue - b.priceValue) * direction
+      return (a.priceValue - b.priceValue) * direction || a.id.localeCompare(b.id)
     })
   } else if (filters.sort === 'oldest' || filters.sort === 'newest') {
     const direction = filters.sort === 'oldest' ? 1 : -1
@@ -208,11 +255,109 @@ function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 
   return filtered
 }
 
+async function fetchLegacyParentCategoryPage(
+  categorySlug: string,
+  subcategorySlug: string | undefined,
+  filters: Omit<AdSearchFilters, 'category' | 'subcategory' | 'page' | 'limit' | 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>,
+  requestedPage: number,
+  limit: number,
+  localFilters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>,
+): Promise<AdsPage | null> {
+  const categories = await getCategories()
+  const parent = categories.find((item) => item.slug === categorySlug || item.id === categorySlug)
+  if (!parent?.children.length) return null
+
+  const collectDescendantSlugs = (children: CategoryOption['children']): string[] =>
+    (children || []).flatMap((child) => {
+      if (typeof child === 'string') return [slugify(child)]
+      const slug = child.slug || slugify(child.name)
+      return [slug, ...collectDescendantSlugs(child.children)]
+    })
+  const descendantSlugs = [...new Set(collectDescendantSlugs(parent.children))]
+  const selectedChildren = subcategorySlug
+    ? descendantSlugs.filter((slug) => slug === subcategorySlug)
+    : descendantSlugs
+  if (!selectedChildren.length) {
+    return { ads: [], meta: { total: 0, page: 1, limit, pages: 0, localFilterScope: { complete: true, scanned: 0, baseTotal: 0, reason: 'category' } } }
+  }
+
+  const children = selectedChildren.slice(0, MAX_DESCENDANT_CATEGORIES)
+  let complete = selectedChildren.length === children.length
+  const initialResults = await Promise.allSettled(children.map(async (slug) => {
+    const result = await apiRequest(`/ads${buildQuery({ ...filters, category: slug, page: 1, limit: LOCAL_FILTER_PAGE_SIZE })}`)
+    const page = readPage(result, 1, LOCAL_FILTER_PAGE_SIZE)
+    return { slug, ads: page.ads, total: page.meta.total, expectedPages: Math.max(page.meta.pages, Math.ceil(page.meta.total / page.meta.limit), 1), loadedPages: 1 }
+  }))
+  const states = initialResults.flatMap((result) => {
+    if (result.status === 'fulfilled') return [result.value]
+    complete = false
+    return []
+  })
+
+  let remainingRequests = Math.max(MAX_DESCENDANT_PAGE_REQUESTS - states.length, 0)
+  for (let pageNumber = 2; remainingRequests > 0; pageNumber += 1) {
+    const pending = states.filter((state) => state.expectedPages >= pageNumber)
+    if (!pending.length) break
+    for (let start = 0; start < pending.length && remainingRequests > 0; start += 4) {
+      const batch = pending.slice(start, start + Math.min(4, remainingRequests))
+      const results = await Promise.allSettled(batch.map(async (state) => {
+        const result = await apiRequest(`/ads${buildQuery({ ...filters, category: state.slug, page: pageNumber, limit: LOCAL_FILTER_PAGE_SIZE })}`)
+        return readPage(result, pageNumber, LOCAL_FILTER_PAGE_SIZE).ads
+      }))
+      remainingRequests -= batch.length
+      results.forEach((result, index) => {
+        const state = states.find((item) => item.slug === batch[index].slug)
+        if (result.status === 'fulfilled' && state) { state.ads.push(...result.value); state.loadedPages += 1 }
+        else complete = false
+      })
+    }
+  }
+  if (states.some((state) => state.loadedPages < state.expectedPages)) complete = false
+
+  const baseTotal = states.reduce((total, state) => total + state.total, 0)
+  const uniqueAds = [...new Map(states.flatMap((state) => state.ads).map((ad) => [ad.id, ad])).values()]
+  const filtered = applyLocalFilters(uniqueAds, localFilters)
+  const hasLocalFilters = Boolean(localFilters.minPrice || localFilters.maxPrice || localFilters.sort || localFilters.attributes)
+  if (!localFilters.sort) {
+    filtered.sort((a, b) => (Date.parse(b.createdAt || '') || 0) - (Date.parse(a.createdAt || '') || 0) || a.id.localeCompare(b.id))
+  }
+  const totalPages = Math.ceil(filtered.length / limit)
+  const page = Math.min(requestedPage, Math.max(totalPages, 1))
+  const startIndex = (page - 1) * limit
+  return {
+    ads: filtered.slice(startIndex, startIndex + limit),
+    meta: {
+      total: filtered.length,
+      page,
+      limit,
+      pages: totalPages,
+      ...(!complete || hasLocalFilters ? { localFilterScope: { complete, scanned: uniqueAds.length, baseTotal, reason: !complete ? 'category' as const : 'filters' as const } } : {}),
+    },
+  }
+}
+
 export async function getAdsPage({ page = 1, limit = 12, ...filters }: AdSearchFilters = {}): Promise<AdsPage> {
+  const capabilities = await getMarketplaceCapabilities()
+  if (capabilities.includes('server-filtering')) {
+    const result = await apiRequest(`/ads${buildQuery({ ...filters, page, limit })}`)
+    return readPage(result, page, limit)
+  }
   // The deployed legacy API rejects minPrice, maxPrice, and sort. Keep those
   // controls compatible by applying them locally after fetching base-filtered pages.
-  const { minPrice, maxPrice, sort, ...serverFilters } = filters
-  const usesLocalFilters = Boolean(minPrice || maxPrice || sort)
+  const { minPrice, maxPrice, sort, attributes, ...serverFilters } = filters
+  const usesLocalFilters = Boolean(minPrice || maxPrice || sort || attributes)
+
+  if (serverFilters.category) {
+    const parentResult = await fetchLegacyParentCategoryPage(
+      serverFilters.category,
+      serverFilters.subcategory,
+      { keyword: serverFilters.keyword, location: serverFilters.location, status: serverFilters.status },
+      page,
+      limit,
+      { minPrice, maxPrice, sort, attributes },
+    )
+    if (parentResult) return parentResult
+  }
 
   if (!usesLocalFilters) {
     const result = await apiRequest(`/ads${buildQuery({ ...serverFilters, page, limit })}`)
@@ -239,7 +384,7 @@ export async function getAdsPage({ page = 1, limit = 12, ...filters }: AdSearchF
   }
 
   const uniqueAds = [...new Map(collected.map((ad) => [ad.id, ad])).values()]
-  const filtered = applyLocalFilters(uniqueAds, { minPrice, maxPrice, sort })
+  const filtered = applyLocalFilters(uniqueAds, { minPrice, maxPrice, sort, attributes })
   const totalPages = Math.ceil(filtered.length / limit)
   const currentPage = Math.min(page, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * limit

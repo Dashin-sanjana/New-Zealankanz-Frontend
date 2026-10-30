@@ -39,12 +39,14 @@ export function ResultSummary({ count, failed = false, loading = false }: Result
 }
 
 interface LocalFilterNoticeProps {
-  scope: { complete: boolean; scanned: number; baseTotal: number }
+  scope: { complete: boolean; scanned: number; baseTotal: number; reason?: 'filters' | 'category' }
 }
 
 export function LocalFilterNotice({ scope }: LocalFilterNoticeProps) {
-  const message = scope.complete
-    ? `Price filters and sorting were applied across all ${scope.baseTotal} matching listings.`
-    : `Price filters and sorting were applied to ${scope.scanned} of ${scope.baseTotal} matching listings. Narrow your search to see a more complete result set.`
+  const message = scope.reason === 'category'
+    ? `Loaded ${scope.scanned} listings across the legacy API's descendant pages. This parent-category result may be incomplete.`
+    : scope.complete
+      ? `Price filters and sorting were applied across all ${scope.baseTotal} matching listings.`
+      : `Price filters and sorting were applied to ${scope.scanned} of ${scope.baseTotal} matching listings. Narrow your search to see a more complete result set.`
   return <Alert type="info" message={message} />
 }
