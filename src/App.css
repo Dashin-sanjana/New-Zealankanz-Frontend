@@ -2019,13 +2019,15 @@ button:disabled { cursor: wait; opacity: .65; }
 .ad-card-body p { display: none; }
 .ad-view-btn { min-height: 42px; padding: 7px 10px; justify-content: center; }
 .search-bar .search-field input, .search-bar .search-field select { min-height: 46px; }
+.search-bar .search-row-primary .search-field { padding: 4px 12px; }
+.search-bar .search-row-primary .search-label { margin-bottom: 2px; }
+.search-bar .search-row-primary .search-field input,
+.search-bar .search-row-primary .search-field select { min-height: 38px; }
 
 @media (min-width: 981px) {
   .home-hero { gap: 20px; padding: 22px max(20px, calc((100vw - 1200px) / 2)) 18px; }
   .home-hero-copy h1 { font-size: clamp(30px, 3.2vw, 40px); }
-  .home-hero .search-field { padding: 8px 12px; }
-  .home-hero .search-label { margin-bottom: 3px; font-size: 10px; }
-  .home-hero .search-field input, .home-hero .search-field select { min-height: 28px; font-size: 13px; }
+  .home-hero .search-label { font-size: 10px; }
 }
 
 @media (max-width: 1100px) {
