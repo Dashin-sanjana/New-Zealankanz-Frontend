@@ -1,5 +1,13 @@
 import { apiRequest, unwrapCollection } from './api'
 
+export interface NotificationItem {
+  id: string
+  title?: string
+  message?: string
+  createdAt?: string
+  readAt?: string | null
+}
+
 export function getCurrentUser() {
   return apiRequest('/users/me')
 }
@@ -18,10 +26,10 @@ export function changePassword({ currentPassword, newPassword }: { currentPasswo
   })
 }
 
-export function getNotifications() {
-  return apiRequest('/notifications').then(unwrapCollection)
+export function getNotifications(): Promise<NotificationItem[]> {
+  return apiRequest('/notifications').then((result) => unwrapCollection(result) as NotificationItem[])
 }
 
-export function markNotificationRead(id) {
+export function markNotificationRead(id: string) {
   return apiRequest(`/notifications/${id}/read`, { method: 'PATCH' })
 }

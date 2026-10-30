@@ -8,10 +8,11 @@ import { Input } from '../../../components/forms/fields'
 
 export default function EmailVerificationPage({ query }: { query: URLSearchParams | null }) {
   usePageTitle('Verify Email')
+  const isDemoMode = import.meta.env.MODE === 'demo' && import.meta.env.VITE_DEMO_MODE === 'true'
   const token = query?.get('token') || ''
   const [status, setStatus] = useState({
     type: 'info',
-    message: token ? 'Verifying your email...' : 'Verification token is required.',
+    message: token ? 'Verifying your email...' : isDemoMode ? 'Email delivery is disabled in this demo. Register to verify your account locally.' : 'Verification token is required.',
   })
   const [email, setEmail] = useState('')
   const [resendStatus, setResendStatus] = useState<{ type: string; message: string } | null>(null)
@@ -59,7 +60,7 @@ export default function EmailVerificationPage({ query }: { query: URLSearchParam
           <Link to="/login" className="primary-button" style={{ textAlign: 'center' }}>
             Continue to login
           </Link>
-        ) : (
+        ) : !isDemoMode ? (
           <div className="auth-card" style={{ padding: '24px', width: '100%', boxSizing: 'border-box' }}>
             <div className="auth-card-heading" style={{ marginBottom: '16px' }}>
               <h2>Resend verification link</h2>
@@ -84,7 +85,7 @@ export default function EmailVerificationPage({ query }: { query: URLSearchParam
               </button>
             </form>
           </div>
-        )}
+        ) : null}
       </div>
     </PageFrame>
   )

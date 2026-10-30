@@ -1,17 +1,20 @@
 import { Link } from '../ui/link'
-import newzealankanzLogo from '../../assets/newzealankanz-logo.jpg'
+import newzealankanzLogo from '../../assets/newzealankanz-logo-transparent.png'
 
 interface HeaderProps {
   route: string
   auth: any
   menuOpen: boolean
   setMenuOpen: (open: boolean) => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }
 
-export function Header({ route, auth, menuOpen, setMenuOpen }: HeaderProps) {
+export function Header({ route, auth, menuOpen, setMenuOpen, theme, onToggleTheme }: HeaderProps) {
   const navItems = [
     ['Marketplace', '/search'],
     ['Property', '/category/property'],
+    ['Motors', '/category/motor'],
     ['Jobs', '/category/jobs'],
     ['Services', '/category/services'],
   ]
@@ -29,10 +32,16 @@ export function Header({ route, auth, menuOpen, setMenuOpen }: HeaderProps) {
       <Link to="/" className="brand" aria-label="NewZealankans Marketplace home" onClick={() => setMenuOpen(false)}>
         <img className="brand-logo" src={newzealankanzLogo} alt="NewZealankans" />
       </Link>
-      <button className="menu-button" type="button" onClick={() => setMenuOpen(!menuOpen)}>
-        Menu
+      <button
+        className="menu-button"
+        type="button"
+        aria-expanded={menuOpen}
+        aria-controls="site-navigation"
+        onClick={() => setMenuOpen(!menuOpen)}
+      >
+        {menuOpen ? 'Close' : 'Menu'}
       </button>
-      <nav className={menuOpen ? 'nav open' : 'nav'}>
+      <nav id="site-navigation" className={menuOpen ? 'nav open' : 'nav'}>
         {navItems.map(([label, to]) => (
           <Link
             key={`${label}-${to}`}
@@ -50,6 +59,9 @@ export function Header({ route, auth, menuOpen, setMenuOpen }: HeaderProps) {
         )}
         {/* Mobile-only auth actions — visible when menu is open on small screens */}
         <div className="mobile-nav-actions">
+          <button type="button" className="theme-toggle" aria-pressed={theme === 'dark'} onClick={onToggleTheme}>
+            {theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          </button>
           {auth.user ? (
             <>
               <Link to="/post-ad" className="sell-button" onClick={() => setMenuOpen(false)}>Start a listing</Link>
@@ -66,6 +78,9 @@ export function Header({ route, auth, menuOpen, setMenuOpen }: HeaderProps) {
         </div>
       </nav>
       <div className="header-actions">
+        <button type="button" className="theme-toggle" aria-pressed={theme === 'dark'} onClick={onToggleTheme}>
+          {theme === 'dark' ? 'Light theme' : 'Dark theme'}
+        </button>
         {auth.user ? (
           <>
             <Link to="/post-ad" className="sell-button">

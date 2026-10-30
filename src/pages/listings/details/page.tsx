@@ -2,17 +2,21 @@ import { useEffect, useState } from 'react'
 import { handleImageError } from '../../../lib/images'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { getAdBySlug } from '../../../services/ads.service'
-import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../../../services/watchlist.service'
+import type { MarketplaceAd } from '../../../services/ads.service'
+import { addToWatchlist, removeFromWatchlist, getWatchlist, isWatchlistUnavailable } from '../../../services/watchlist.service'
 import { submitContact } from '../../../services/contact.service'
 import { AdSlot } from '../../../components/marketplace/ad-slot'
 import { Alert } from '../../../components/ui/feedback'
 import { PageFrame } from '../../../components/ui/page-frame'
+import { navigate } from '../../../lib/navigation'
+import { getStoredAuth } from '../../../services/api'
 import NotFoundPage from '../../not-found/page'
+import type { FormEvent, SyntheticEvent } from 'react'
 
-function ImageGallery({ ad }) {
+function ImageGallery({ ad }: { ad: MarketplaceAd }) {
   const rawImages = ad.images?.length ? ad.images : [{ url: ad.image }]
   const images = rawImages
-    .map((img) => (typeof img === 'string' ? img : img?.url || ''))
+    .map((img) => img?.url || '')
     .filter(Boolean)
 
   const [selected, setSelected] = useState(0)
@@ -24,7 +28,7 @@ function ImageGallery({ ad }) {
         className="detail-image"
         src={current}
         alt={ad.title}
-        onError={(e) => handleImageError(e, ad.title)}
+        onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, ad.title)}
       />
     )
   }
@@ -35,10 +39,10 @@ function ImageGallery({ ad }) {
         className="detail-image gallery-main"
         src={current}
         alt={`${ad.title} – image ${selected + 1} of ${images.length}`}
-        onError={(e) => handleImageError(e, ad.title)}
+        onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, ad.title)}
       />
       <div className="gallery-thumbs">
-        {images.map((src, i) => (
+        {images.map((src: string, i: number) => (
           <button
             key={src}
             type="button"
@@ -46,7 +50,7 @@ function ImageGallery({ ad }) {
             onClick={() => setSelected(i)}
             aria-label={`View image ${i + 1}`}
           >
-            <img src={src} alt="" onError={(e) => handleImageError(e, '')} />
+            <img src={src} alt="" onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, '')} />
           </button>
         ))}
       </div>
@@ -54,36 +58,42 @@ function ImageGallery({ ad }) {
   )
 }
 
-function EnquiryForm({ ad }) {
+function EnquiryForm({ ad }: { ad: MarketplaceAd }) {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [sellerNotified, setSellerNotified] = useState<boolean | null>(null)
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setStatus('sending')
-    const form = new FormData(event.currentTarget)
+    const formElement = event.currentTarget
+    const form = new FormData(formElement)
     const body = {
       name: String(form.get('name') || ''),
       email: String(form.get('email') || ''),
       subject: `Enquiry about: ${ad.title}`,
       message: String(form.get('message') || ''),
+      adId: ad.id,
     }
     try {
-      await submitContact(body)
+      const receipt = await submitContact(body)
+      setSellerNotified(receipt.sellerNotified)
       setStatus('sent')
-      ;(event.target as HTMLFormElement).reset()
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Could not send enquiry.')
+      formElement.reset()
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Could not send enquiry.')
       setStatus('error')
     }
   }
 
   if (status === 'sent') {
-    return <Alert type="success" message="Your enquiry has been sent. The seller will be in touch." />
+    return sellerNotified === false
+      ? <Alert type="info" message="Your enquiry was saved, but the seller could not be notified automatically. Please try again later." />
+      : <Alert type="success" message="Your enquiry has been sent. The seller will be in touch." />
   }
 
   return (
-    <form className="enquiry-form" onSubmit={handleSubmit} noValidate>
+    <form className="enquiry-form" onSubmit={handleSubmit}>
       <h3>Send enquiry</h3>
       {status === 'error' && <Alert type="error" message={errorMsg} />}
       <label>
@@ -105,12 +115,14 @@ function EnquiryForm({ ad }) {
   )
 }
 
-export default function AdDetailPage({ slug }) {
-  const [ad, setAd] = useState(null)
+export default function AdDetailPage({ slug }: { slug?: string }) {
+  const [ad, setAd] = useState<MarketplaceAd | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const [watchlistAvailable, setWatchlistAvailable] = useState(true)
   const [watchMsg, setWatchMsg] = useState('')
+  const [retry, setRetry] = useState(0)
 
   const ogImage = ad?.images?.[0]?.url
     ? ad.images[0].url.startsWith('http')
@@ -126,25 +138,44 @@ export default function AdDetailPage({ slug }) {
   })
 
   useEffect(() => {
+    let active = true
     setLoaded(false)
-    getAdBySlug(slug)
+    setError('')
+    getAdBySlug(slug || '')
       .then((item) => {
-        setAd(item)
-        setLoaded(true)
-        setError('')
+        if (active) {
+          setAd(item)
+          setLoaded(true)
+        }
       })
       .catch((err) => {
-        setLoaded(true)
-        setError(err.message)
+        if (active) {
+          setLoaded(true)
+          setError(err.message)
+        }
       })
 
     getWatchlist()
-      .then((items) => setSavedIds(new Set(items.map((a) => String(a.id)))))
-      .catch(() => {})
-  }, [slug])
+      .then((items: Array<{ id: string | number }>) => {
+        if (active) {
+          setSavedIds(new Set(items.map((a) => String(a.id))))
+          setWatchlistAvailable(true)
+        }
+      })
+      .catch((err) => { if (active && isWatchlistUnavailable(err)) setWatchlistAvailable(false) })
+    return () => { active = false }
+  }, [slug, retry])
 
   async function toggleWatchlist() {
     if (!ad) return
+    if (!watchlistAvailable) {
+      setWatchMsg('Saved listings aren’t available on the current marketplace service.')
+      return
+    }
+    if (!getStoredAuth()) {
+      navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`)
+      return
+    }
     const isSaved = savedIds.has(String(ad.id))
     try {
       if (isSaved) {
@@ -156,15 +187,20 @@ export default function AdDetailPage({ slug }) {
         setSavedIds((prev) => new Set(prev).add(String(ad.id)))
         setWatchMsg('Saved to watchlist.')
       }
-    } catch (err: any) {
-      setWatchMsg(err.message || 'Could not update watchlist.')
+    } catch (err) {
+      if (isWatchlistUnavailable(err)) {
+        setWatchlistAvailable(false)
+        setWatchMsg('Saved listings aren’t available on the current marketplace service.')
+      } else {
+        setWatchMsg(err instanceof Error ? err.message : 'Could not update watchlist.')
+      }
     }
   }
 
   if (loaded && !ad && error) {
     return (
       <PageFrame title="Listing unavailable" subtitle="The listing could not be loaded.">
-        <Alert type="error" message={error} />
+        <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} />
       </PageFrame>
     )
   }
@@ -210,13 +246,15 @@ export default function AdDetailPage({ slug }) {
             <dd>{ad.location}</dd>
             <dt>Contact</dt>
             <dd>{ad.contactName}</dd>
+            {ad.contactPhone && <><dt>Phone</dt><dd><a href={`tel:${ad.contactPhone}`}>{ad.contactPhone}</a></dd></>}
           </dl>
           <button
             type="button"
-            className={isSaved ? 'ghost-button full' : 'primary-button full'}
+            className={isSaved || !watchlistAvailable ? 'ghost-button full' : 'primary-button full'}
             onClick={toggleWatchlist}
+            disabled={!watchlistAvailable}
           >
-            {isSaved ? '★ Saved to watchlist' : '☆ Save to watchlist'}
+            {!watchlistAvailable ? 'Watchlist unavailable' : isSaved ? '★ Saved to watchlist' : '☆ Save to watchlist'}
           </button>
           {watchMsg && <p className="watch-msg">{watchMsg}</p>}
           <AdSlot name="LISTING_SIDEBAR" />

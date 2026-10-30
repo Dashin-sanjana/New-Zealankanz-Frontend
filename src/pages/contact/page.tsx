@@ -4,6 +4,8 @@ import { Alert } from '../../components/ui/feedback'
 import { PageFrame } from '../../components/ui/page-frame'
 import { usePageTitle } from '../../hooks/use-page-title'
 import { submitContact } from '../../services/contact.service'
+import type { ContactPayload } from '../../services/contact.service'
+import type { FormEvent } from 'react'
 
 export default function ContactPage() {
   usePageTitle('Contact')
@@ -17,14 +19,20 @@ export default function ContactPage() {
       {error && <Alert type="error" message={error} />}
       <form
         className="form-card"
-        onSubmit={async (event) => {
+        onSubmit={async (event: FormEvent<HTMLFormElement>) => {
           event.preventDefault()
           setSubmitting(true)
           setError('')
           setSubmitted(false)
-          const form = Object.fromEntries(new FormData(event.currentTarget))
+          const form = new FormData(event.currentTarget)
+          const payload: ContactPayload = {
+            name: String(form.get('name') || ''),
+            email: String(form.get('email') || ''),
+            subject: String(form.get('subject') || ''),
+            message: String(form.get('message') || ''),
+          }
           try {
-            await submitContact(form)
+            await submitContact(payload)
             setSubmitted(true)
             event.currentTarget.reset()
           } catch (err) {
@@ -39,7 +47,7 @@ export default function ContactPage() {
         <Input label="Subject" name="subject" required />
         <label>
           Message
-          <textarea name="message" rows="5" required placeholder="How can we help?" />
+          <textarea name="message" rows={5} required placeholder="How can we help?" />
         </label>
         <button className="primary-button" type="submit" disabled={submitting}>
           {submitting ? 'Sending...' : 'Send message'}

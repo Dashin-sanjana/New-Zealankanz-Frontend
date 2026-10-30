@@ -1,12 +1,13 @@
 import { handleImageError } from '../../lib/images'
 import { Link } from '../ui/link'
+import type { MarketplaceAd } from '../../services/ads.service'
 
-export function AdCard({ ad }) {
+export function AdCard({ ad, onRemove }: { ad: MarketplaceAd; onRemove?: () => void }) {
   return (
     <article className="ad-card">
       <div className="ad-card-img-wrap">
         <img src={ad.image} alt={ad.title} onError={(event) => handleImageError(event, ad.title)} />
-        {ad.featured && <span className="featured-badge">⭐ Featured</span>}
+        {ad.featured && <span className="featured-badge">Featured</span>}
         <span className="ad-card-category-pill">{ad.category}</span>
       </div>
       <div className="ad-card-body">
@@ -21,6 +22,7 @@ export function AdCard({ ad }) {
         <div className="card-footer">
           <strong className="ad-price">{ad.price}</strong>
           <Link to={`/ads/${ad.slug}`} className="ad-view-btn">View →</Link>
+          {onRemove && <button type="button" className="ghost-button" onClick={onRemove}>Remove</button>}
         </div>
       </div>
     </article>

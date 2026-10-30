@@ -1,10 +1,23 @@
 import { PageFrame } from '../ui/page-frame'
+import type { MarketplaceAd } from '../../services/ads.service'
 
-export function AdminListPage({ title, subtitle, rows, actions, onAction }) {
+interface AdminListPageProps {
+  title: string
+  subtitle: string
+  rows: MarketplaceAd[]
+  loading?: boolean
+  error?: boolean
+  actions: string[]
+  onAction?: (action: string, row: MarketplaceAd) => void
+}
+
+export function AdminListPage({ title, subtitle, rows, loading = false, error = false, actions, onAction }: AdminListPageProps) {
   return (
     <PageFrame title={title} subtitle={subtitle}>
       <div className="table-card">
-        {rows.map((row) => (
+        {loading ? <p role="status" aria-live="polite">Loading listings…</p> : null}
+        {!loading && !error && rows.length === 0 ? <p>No listings in this view yet.</p> : null}
+        {!loading && !error && rows.map((row) => (
           <div className="table-row admin-row" key={row.id}>
             <div>
               <strong>{row.title}</strong>

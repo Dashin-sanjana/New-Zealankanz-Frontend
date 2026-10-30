@@ -3,11 +3,12 @@ const PAGE_SIZE = 12
 interface PaginationProps {
   total: number
   page: number
+  pageSize?: number
   onPage: (page: number) => void
 }
 
-export function Pagination({ total, page, onPage }: PaginationProps) {
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+export function Pagination({ total, page, pageSize = PAGE_SIZE, onPage }: PaginationProps) {
+  const totalPages = Math.ceil(total / pageSize)
   if (totalPages <= 1) return null
 
   return (

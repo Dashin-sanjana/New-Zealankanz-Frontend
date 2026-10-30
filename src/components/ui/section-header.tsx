@@ -1,6 +1,12 @@
 import { Link } from './link'
 
-export function SectionHeader({ title, actionLabel, actionTo }) {
+interface SectionHeaderProps {
+  title: string
+  actionLabel?: string
+  actionTo?: string
+}
+
+export function SectionHeader({ title, actionLabel, actionTo }: SectionHeaderProps) {
   return (
     <div className="section-header">
       <h2>{title}</h2>

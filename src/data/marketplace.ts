@@ -212,13 +212,11 @@ export const fallbackBanners = {
 }
 
 export const adPlacementOptions = [
-  ['HOME_AFTER_HERO', 'Home: after hero'],
-  ['HOME_SIDEBAR', 'Home: sidebar'],
-  ['CATEGORY_TOP', 'Category: top'],
-  ['CATEGORY_AFTER_SEARCH', 'Category: after advanced search'],
-  ['SEARCH_TOP', 'Search results: top'],
-  ['LISTING_SIDEBAR', 'Listing detail: sidebar'],
-  ['FOOTER_TOP', 'Footer: top'],
+  ['HOME', 'Homepage primary'],
+  ['SIDEBAR', 'Secondary placements'],
+  ['CATEGORY', 'Category pages'],
+  ['LISTING', 'Listing details'],
+  ['FOOTER', 'Footer'],
 ]
 
 export const adminCards = [

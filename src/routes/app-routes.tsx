@@ -29,8 +29,9 @@ import {
 import NotFoundPage from '../pages/not-found/page'
 import { RequireAdmin, RequireAuth } from '../features/auth/require-auth'
 import { paths } from './paths'
+import type { AuthState } from '../types/auth'
 
-export default function AppRoutes({ route, auth }) {
+export default function AppRoutes({ route, auth }: { route: string; auth: AuthState }) {
   const [pathname, queryString = ''] = route.split('?')
   const query = new URLSearchParams(queryString)
 
@@ -43,7 +44,7 @@ export default function AppRoutes({ route, auth }) {
   if (pathname === paths.verifyEmail) return <EmailVerificationPage query={query} />
   if (pathname === paths.postAd) return <RequireAuth auth={auth}><PostAdPage /></RequireAuth>
   if (pathname.startsWith('/edit-ad/')) {
-    return <RequireAuth auth={auth}><EditAdPage slug={pathname.split('/').pop()} /></RequireAuth>
+    return <RequireAuth auth={auth}><EditAdPage slug={pathname.split('/').pop() || ''} /></RequireAuth>
   }
   if (pathname === paths.dashboard) {
     return <RequireAuth auth={auth}><UserDashboardPage auth={auth} /></RequireAuth>
@@ -62,8 +63,8 @@ export default function AppRoutes({ route, auth }) {
   if (pathname === paths.adminLocations) return <RequireAdmin auth={auth}><AdminLocationsPage /></RequireAdmin>
   if (pathname === paths.adminBanners) return <RequireAdmin auth={auth}><AdminBannersPage /></RequireAdmin>
   if (pathname === paths.adminUsers) return <RequireAdmin auth={auth}><AdminUsersPage /></RequireAdmin>
-  if (pathname.startsWith('/category/')) return <CategoryPage slug={pathname.split('/').pop()} query={query} />
-  if (pathname.startsWith('/location/')) return <LocationPage slug={pathname.split('/').pop()} />
-  if (pathname.startsWith('/ads/')) return <AdDetailPage slug={pathname.split('/').pop()} />
+  if (pathname.startsWith('/category/')) return <CategoryPage slug={pathname.split('/').pop() || ''} query={query} />
+  if (pathname.startsWith('/location/')) return <LocationPage slug={pathname.split('/').pop() || ''} query={query} />
+  if (pathname.startsWith('/ads/')) return <AdDetailPage slug={pathname.split('/').pop() || ''} />
   return <NotFoundPage />
 }

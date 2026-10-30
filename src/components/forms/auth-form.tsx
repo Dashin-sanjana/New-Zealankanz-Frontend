@@ -15,7 +15,7 @@ function getAutoComplete(field: string, disableAutofill: boolean): string | unde
   return 'off'
 }
 
-function validateAuthForm(form: Record<string, any>, fields: string[]): Record<string, string> {
+function validateAuthForm(form: Record<string, string>, fields: string[]): Record<string, string> {
   const errors: Record<string, string> = {}
   const isRegister = fields.includes('Full name')
 
@@ -55,7 +55,7 @@ interface AuthFormProps {
   subtitle: string
   fields: string[]
   buttonLabel: string
-  onSubmit: (form: Record<string, any>) => void | Promise<void>
+  onSubmit: (form: Record<string, string>) => void | Promise<void>
   disableAutofill?: boolean
   eyebrow?: string
   panelTitle?: string
@@ -92,14 +92,6 @@ export function AuthForm({
         <span className="auth-eyebrow">{eyebrow}</span>
         <h1>{panelTitle}</h1>
         <p>{panelText}</p>
-        <div className="auth-preview">
-          <span className="auth-preview-bar" />
-          <div>
-            <strong>Sunny two bedroom unit</strong>
-            <small>Auckland / $620 week</small>
-          </div>
-          <span className="auth-preview-price">$620</span>
-        </div>
         <div className="auth-highlight-grid">
           {authHighlights.map(([label, text]) => (
             <span key={label}>
@@ -123,7 +115,8 @@ export function AuthForm({
           noValidate
           onSubmit={async (event) => {
             event.preventDefault()
-            const form = Object.fromEntries(new FormData(event.currentTarget))
+            const entries = Array.from(new FormData(event.currentTarget).entries())
+            const form = Object.fromEntries(entries.map(([key, value]) => [key, String(value)]))
             const validationErrors = validateAuthForm(form, fields)
 
             if (Object.keys(validationErrors).length > 0) {

@@ -1,5 +1,9 @@
-import { apiRequest, unwrapCollection } from './api'
+import { ApiError, apiRequest, unwrapCollection } from './api'
 import { normalizeAd } from './ads.service'
+
+export function isWatchlistUnavailable(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404
+}
 
 export function getWatchlist() {
   return apiRequest('/watchlist').then((result) => unwrapCollection(result).map(normalizeAd))

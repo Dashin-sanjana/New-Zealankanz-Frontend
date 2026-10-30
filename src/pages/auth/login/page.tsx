@@ -1,9 +1,10 @@
 import { AuthForm } from '../../../components/forms/auth-form'
-import { navigate } from '../../../lib/navigation'
+import { getReturnPath, navigate } from '../../../lib/navigation'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { loginAccount } from '../../../services/auth.service'
+import type { AuthState } from '../../../types/auth'
 
-export default function LoginPage({ auth }: { auth: any }) {
+export default function LoginPage({ auth }: { auth: AuthState }) {
   usePageTitle('Login')
   return (
     <AuthForm
@@ -18,13 +19,13 @@ export default function LoginPage({ auth }: { auth: any }) {
       footerText="New to NewZealankans?"
       footerLinkLabel="Create account"
       footerLinkTo="/register"
-      onSubmit={async (form: Record<string, any>) => {
+      onSubmit={async (form: Record<string, string>) => {
         const result = await loginAccount({
           email: form.Email,
           password: form.Password,
         })
         auth.login(result)
-        navigate('/dashboard')
+        navigate(getReturnPath())
       }}
     />
   )

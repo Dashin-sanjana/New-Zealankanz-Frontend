@@ -4,15 +4,17 @@ import { PageFrame } from '../../../components/ui/page-frame'
 import { Input } from '../../../components/forms/fields'
 import { usePageTitle } from '../../../hooks/use-page-title'
 import { changePassword, updateProfile } from '../../../services/user.service'
+import type { AuthState } from '../../../types/auth'
+import type { FormEvent } from 'react'
 
-export default function SettingsPage({ auth }) {
+export default function SettingsPage({ auth }: { auth: AuthState }) {
   usePageTitle('Account Settings')
   const [profileMessage, setProfileMessage] = useState('')
   const [profileError, setProfileError] = useState('')
   const [passwordMessage, setPasswordMessage] = useState('')
   const [passwordError, setPasswordError] = useState('')
 
-  async function handleProfileSubmit(event) {
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const name = (form.get('name') as string || '').trim()
@@ -21,12 +23,12 @@ export default function SettingsPage({ auth }) {
     try {
       await updateProfile({ name })
       setProfileMessage('Name updated successfully.')
-    } catch (err: any) {
-      setProfileError(err.message || 'Could not update profile.')
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Could not update profile.')
     }
   }
 
-  async function handlePasswordSubmit(event) {
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const currentPassword = form.get('currentPassword') as string
@@ -39,9 +41,9 @@ export default function SettingsPage({ auth }) {
     try {
       await changePassword({ currentPassword, newPassword })
       setPasswordMessage('Password changed successfully.')
-      ;(event.target as HTMLFormElement).reset()
-    } catch (err: any) {
-      setPasswordError(err.message || 'Could not change password.')
+      event.currentTarget.reset()
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Could not change password.')
     }
   }
 

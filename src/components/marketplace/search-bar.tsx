@@ -1,16 +1,46 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { categories, locations } from '../../data/marketplace'
 import { navigate } from '../../lib/navigation'
+import { slugify } from '../../lib/slugify'
 import { getCategories, getLocations } from '../../services/marketplace.service'
+import { Alert } from '../ui/feedback'
 
-function getSubcategoryOptions(items, categorySlug = '') {
+interface CategoryOption {
+  id: string
+  name: string
+  slug: string
+  children?: Array<string | { id?: string; name: string; slug?: string }>
+}
+
+interface LocationOption {
+  id: string
+  name: string
+  slug: string
+}
+
+interface SearchBarProps {
+  defaultKeyword?: string
+  defaultCategory?: string
+  defaultSubcategory?: string
+  defaultLocation?: string
+  defaultMinPrice?: string
+  defaultMaxPrice?: string
+  defaultSort?: string
+  actionPath?: string
+  fixedCategory?: boolean
+  showAdvancedFilters?: boolean
+  simple?: boolean
+}
+
+function getSubcategoryOptions(items: CategoryOption[], categorySlug = '') {
   return items
     .filter((category) => !categorySlug || category.slug === categorySlug)
     .flatMap((category) =>
-      (category.children || []).map((child) => ({
-        value: child.slug || child,
-        label: `${category.name} / ${child.name || child}`,
-      })),
+      (category.children || []).map((child) => {
+        const label = typeof child === 'string' ? child : child.name
+        const value = typeof child === 'string' ? slugify(child) : child.slug || slugify(label)
+        return { value, label: `${category.name} / ${label}` }
+      }),
     )
 }
 
@@ -26,24 +56,43 @@ export function SearchBar({
   fixedCategory = false,
   showAdvancedFilters = true,
   simple = false,
-}) {
-  const [categoryOptions, setCategoryOptions] = useState(categories)
-  const [locationOptions, setLocationOptions] = useState(locations)
+}: SearchBarProps) {
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>(categories)
+  const [locationOptions, setLocationOptions] = useState<LocationOption[]>(locations)
+  const [selectedCategory, setSelectedCategory] = useState(defaultCategory)
+  const [selectedSubcategory, setSelectedSubcategory] = useState(defaultSubcategory)
+  const [selectedLocation, setSelectedLocation] = useState(defaultLocation)
+  const [optionsError, setOptionsError] = useState('')
+  const [optionsRetry, setOptionsRetry] = useState(0)
 
   useEffect(() => {
-    getCategories().then(setCategoryOptions).catch(() => setCategoryOptions([]))
-    getLocations().then(setLocationOptions).catch(() => setLocationOptions([]))
-  }, [])
+    let active = true
+    Promise.allSettled([getCategories(), getLocations()]).then(([categoryResult, locationResult]) => {
+      if (!active) return
+      if (categoryResult.status === 'fulfilled') setCategoryOptions(categoryResult.value)
+      if (locationResult.status === 'fulfilled') setLocationOptions(locationResult.value)
+      setOptionsError(categoryResult.status === 'rejected' || locationResult.status === 'rejected'
+        ? 'Some search options couldn’t be refreshed. You can retry while using the available options.'
+        : '')
+    })
+    return () => { active = false }
+  }, [optionsRetry])
+
+  useEffect(() => {
+    setSelectedCategory(defaultCategory)
+    setSelectedSubcategory(defaultSubcategory)
+    setSelectedLocation(defaultLocation)
+  }, [defaultCategory, defaultSubcategory, defaultLocation])
 
   return (
     <form
       className={`search-bar${fixedCategory ? ' search-bar-fixed-category' : ''}${simple ? ' search-bar-simple' : ''}`}
-      onSubmit={(event) => {
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const form = new FormData(event.currentTarget)
         const params = new URLSearchParams()
         for (const [key, value] of form.entries()) {
-          if (value) params.set(key, value)
+          if (value) params.set(key, String(value))
         }
         navigate(`${actionPath}?${params.toString()}`)
       }}
@@ -63,7 +112,10 @@ export function SearchBar({
         ) : (
           <div className="search-field">
             <label htmlFor="sb-category" className="search-label">Category</label>
-            <select id="sb-category" name="category" defaultValue={defaultCategory}>
+            <select id="sb-category" name="category" value={selectedCategory} onChange={(event) => {
+              setSelectedCategory(event.target.value)
+              setSelectedSubcategory('')
+            }}>
               <option value="">All categories</option>
               {categoryOptions.map((item) => (
                 <option key={item.id} value={item.slug}>{item.name}</option>
@@ -75,7 +127,7 @@ export function SearchBar({
         {!simple && (
           <div className="search-field">
             <label htmlFor="sb-location" className="search-label">Location</label>
-            <select id="sb-location" name="location" defaultValue={defaultLocation}>
+            <select id="sb-location" name="location" value={selectedLocation} onChange={(event) => setSelectedLocation(event.target.value)}>
               <option value="">All NZ cities</option>
               {locationOptions.map((item) => (
                 <option key={item.id} value={item.slug}>{item.name}</option>
@@ -91,38 +143,42 @@ export function SearchBar({
       </div>
 
       {showAdvancedFilters && (
-        <div className="search-row-filters">
-          <div className="search-field">
-            <label htmlFor="sb-subcategory" className="search-label">Subcategory</label>
-            <select id="sb-subcategory" name="subcategory" defaultValue={defaultSubcategory}>
-              <option value="">All subcategories</option>
-              {getSubcategoryOptions(categoryOptions, fixedCategory ? defaultCategory : '').map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-          </div>
+        <details className="search-advanced" open={Boolean(defaultSubcategory || defaultMinPrice || defaultMaxPrice || defaultSort)}>
+          <summary>Advanced filters</summary>
+          <div className="search-row-filters">
+            <div className="search-field">
+              <label htmlFor="sb-subcategory" className="search-label">Subcategory</label>
+              <select id="sb-subcategory" name="subcategory" value={selectedSubcategory} onChange={(event) => setSelectedSubcategory(event.target.value)}>
+                <option value="">All subcategories</option>
+                {getSubcategoryOptions(categoryOptions, selectedCategory).map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="search-field">
-            <label htmlFor="sb-min" className="search-label">Min price ($)</label>
-            <input id="sb-min" name="minPrice" type="number" min="0" defaultValue={defaultMinPrice} placeholder="No minimum" />
-          </div>
+            <div className="search-field">
+              <label htmlFor="sb-min" className="search-label">Min price ($)</label>
+              <input id="sb-min" name="minPrice" type="number" min="0" defaultValue={defaultMinPrice} placeholder="No minimum" />
+            </div>
 
-          <div className="search-field">
-            <label htmlFor="sb-max" className="search-label">Max price ($)</label>
-            <input id="sb-max" name="maxPrice" type="number" min="0" defaultValue={defaultMaxPrice} placeholder="No maximum" />
-          </div>
+            <div className="search-field">
+              <label htmlFor="sb-max" className="search-label">Max price ($)</label>
+              <input id="sb-max" name="maxPrice" type="number" min="0" defaultValue={defaultMaxPrice} placeholder="No maximum" />
+            </div>
 
-          <div className="search-field">
-            <label htmlFor="sb-sort" className="search-label">Sort by</label>
-            <select id="sb-sort" name="sort" defaultValue={defaultSort}>
-              <option value="">Newest first</option>
-              <option value="price_asc">Price: low → high</option>
-              <option value="price_desc">Price: high → low</option>
-              <option value="oldest">Oldest first</option>
-            </select>
+            <div className="search-field">
+              <label htmlFor="sb-sort" className="search-label">Sort by</label>
+              <select id="sb-sort" name="sort" defaultValue={defaultSort}>
+                <option value="">Newest first</option>
+                <option value="price_asc">Price: low → high</option>
+                <option value="price_desc">Price: high → low</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
           </div>
-        </div>
+        </details>
       )}
+      {optionsError && <Alert type="info" message={optionsError} onRetry={() => setOptionsRetry((value) => value + 1)} compact />}
     </form>
   )
 }

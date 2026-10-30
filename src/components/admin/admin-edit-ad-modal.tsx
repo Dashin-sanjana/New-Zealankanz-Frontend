@@ -3,50 +3,73 @@ import { Alert } from '../ui/feedback'
 import { Input, Select } from '../forms/fields'
 import { getCategories, getLocations } from '../../services/marketplace.service'
 import { adminUpdateAd } from '../../services/admin.service'
+import type { MarketplaceAd } from '../../services/ads.service'
+import type { CategoryOption, LocationOption, SelectOption } from '../../types/marketplace'
+import type { FormEvent } from 'react'
 
-function buildCategoryOptions(items) {
+function buildCategoryOptions(items: CategoryOption[]): SelectOption[] {
   return items.flatMap((category) => [
     { value: category.id, label: category.name },
-    ...(category.children || []).map((child) => ({
-      value: child.id || child,
-      label: `${category.name} / ${child.name || child}`,
-    })),
+    ...(category.children || []).map((child) => typeof child === 'string'
+      ? { value: child, label: `${category.name} / ${child}` }
+      : { value: child.id, label: `${category.name} / ${child.name}` }),
   ])
 }
 
-export function AdminEditAdModal({ ad, onClose, onSaved }) {
-  const [categories, setCategories] = useState([])
-  const [locations, setLocations] = useState([])
+interface AdminEditAdModalProps {
+  ad: MarketplaceAd
+  onClose: () => void
+  onSaved: () => void
+}
+
+export function AdminEditAdModal({ ad, onClose, onSaved }: AdminEditAdModalProps) {
+  const [categories, setCategories] = useState<CategoryOption[]>([])
+  const [locations, setLocations] = useState<LocationOption[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [optionsError, setOptionsError] = useState('')
+  const [optionsLoading, setOptionsLoading] = useState(true)
+  const [optionsRetry, setOptionsRetry] = useState(0)
 
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => {})
-    getLocations().then(setLocations).catch(() => {})
-  }, [])
+    let active = true
+    setOptionsLoading(true)
+    Promise.allSettled([getCategories(), getLocations()]).then(([categoryResult, locationResult]) => {
+      if (!active) return
+      if (categoryResult.status === 'fulfilled') setCategories(categoryResult.value)
+      if (locationResult.status === 'fulfilled') setLocations(locationResult.value)
+      const categoriesLoaded = categoryResult.status === 'fulfilled' ? categoryResult.value : []
+      const locationsLoaded = locationResult.status === 'fulfilled' ? locationResult.value : []
+      setOptionsError(!categoriesLoaded.length || !locationsLoaded.length
+        ? 'Category or location choices couldn’t be loaded. Retry before saving.'
+        : '')
+      setOptionsLoading(false)
+    })
+    return () => { active = false }
+  }, [optionsRetry])
 
   const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories])
   const locationOptions = locations.map((item) => ({ value: item.id, label: item.name }))
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaving(true)
     setError('')
     const form = new FormData(event.currentTarget)
     const payload = {
-      title: form.get('title'),
+      title: String(form.get('title') || ''),
       price: String(form.get('price') || '').replace(/[^0-9.]/g, '') || undefined,
-      categoryId: form.get('categoryId'),
-      locationId: form.get('locationId'),
-      contactName: form.get('contactName'),
-      contactEmail: form.get('contactEmail'),
-      description: form.get('description'),
+      categoryId: String(form.get('categoryId') || ''),
+      locationId: String(form.get('locationId') || ''),
+      contactName: String(form.get('contactName') || ''),
+      contactEmail: String(form.get('contactEmail') || ''),
+      description: String(form.get('description') || ''),
     }
     try {
       await adminUpdateAd(ad.id, payload)
       onSaved()
-    } catch (err: any) {
-      setError(err.message || 'Could not save changes.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save changes.')
       setSaving(false)
     }
   }
@@ -61,6 +84,7 @@ export function AdminEditAdModal({ ad, onClose, onSaved }) {
         <p className="modal-subtitle">
           Admin edits do not change the approval status.
         </p>
+        {optionsError && <Alert type="error" message={optionsError} onRetry={() => setOptionsRetry((value) => value + 1)} />}
         {error && <Alert type="error" message={error} />}
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-grid">
@@ -94,8 +118,8 @@ export function AdminEditAdModal({ ad, onClose, onSaved }) {
           </label>
           <div className="modal-actions">
             <button type="button" className="ghost-button" onClick={onClose}>Cancel</button>
-            <button type="submit" className="primary-button" disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
+            <button type="submit" className="primary-button" disabled={saving || optionsLoading || !categoryOptions.length || !locationOptions.length}>
+              {saving ? 'Saving…' : optionsLoading ? 'Loading choices…' : 'Save changes'}
             </button>
           </div>
         </form>
