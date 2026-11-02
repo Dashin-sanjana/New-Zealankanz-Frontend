@@ -20,7 +20,12 @@ function ImageGallery({ ad }: { ad: MarketplaceAd }) {
     .filter(Boolean)
 
   const [selected, setSelected] = useState(0)
+  const [imageUnavailable, setImageUnavailable] = useState(false)
   const current = images[selected] || ''
+
+  if (!current || imageUnavailable) {
+    return <div className="detail-image detail-image-unavailable" role="img" aria-label="Image unavailable">Image unavailable</div>
+  }
 
   if (images.length <= 1) {
     return (
@@ -28,7 +33,7 @@ function ImageGallery({ ad }: { ad: MarketplaceAd }) {
         className="detail-image"
         src={current}
         alt={ad.title}
-        onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, ad.title)}
+        onError={(e: SyntheticEvent<HTMLImageElement>) => ad.demoContent ? setImageUnavailable(true) : handleImageError(e, ad.title)}
       />
     )
   }
@@ -39,7 +44,7 @@ function ImageGallery({ ad }: { ad: MarketplaceAd }) {
         className="detail-image gallery-main"
         src={current}
         alt={`${ad.title} – image ${selected + 1} of ${images.length}`}
-        onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, ad.title)}
+        onError={(e: SyntheticEvent<HTMLImageElement>) => ad.demoContent ? setImageUnavailable(true) : handleImageError(e, ad.title)}
       />
       <div className="gallery-thumbs">
         {images.map((src: string, i: number) => (
@@ -50,7 +55,7 @@ function ImageGallery({ ad }: { ad: MarketplaceAd }) {
             onClick={() => setSelected(i)}
             aria-label={`View image ${i + 1}`}
           >
-            <img src={src} alt="" onError={(e: SyntheticEvent<HTMLImageElement>) => handleImageError(e, '')} />
+            <img src={src} alt="" onError={(e: SyntheticEvent<HTMLImageElement>) => ad.demoContent ? e.currentTarget.style.visibility = 'hidden' : handleImageError(e, '')} />
           </button>
         ))}
       </div>
@@ -215,38 +220,38 @@ export default function AdDetailPage({ slug }: { slug?: string }) {
     name: ad.title,
     description: ad.description,
     price: String(ad.price).replace(/[^0-9.]/g, '') || undefined,
-    priceCurrency: 'NZD',
+    ...(ad.priceCurrency ? { priceCurrency: ad.priceCurrency } : {}),
     availability: 'https://schema.org/InStock',
-    areaServed: ad.location,
+    ...(ad.location ? { areaServed: ad.location } : {}),
     category: ad.subcategory || ad.category,
     image: ad.image || undefined,
-    seller: {
+    ...(!ad.demoContent ? { seller: {
       '@type': 'Person',
       name: ad.contactName,
-    },
+    } } : {}),
   }
 
   return (
-    <PageFrame title={ad.title} subtitle={`${ad.category} in ${ad.location}`}>
+    <PageFrame title={ad.title} subtitle={ad.location ? `${ad.category} in ${ad.location}` : ad.category}>
       <script type="application/ld+json">{JSON.stringify(schema)}</script>
       {error && <Alert type="error" message={error} />}
+      {ad.demoContent && <p className="demo-content-notice">Demo content imported from the original marketplace. This is not a current seller advertisement. {ad.sourceUrl && <a href={ad.sourceUrl} target="_blank" rel="noreferrer">View original listing</a>}</p>}
       <div className="detail-layout">
         <div>
           <ImageGallery ad={ad} />
           <p className="detail-description">{ad.description}</p>
-          <EnquiryForm ad={ad} />
+          {!ad.demoContent && <EnquiryForm ad={ad} />}
         </div>
         <aside className="detail-panel">
           <strong className="price">{ad.price}</strong>
-          <span className="status approved">Approved</span>
+          <span className={ad.demoContent ? 'demo-content-badge detail-demo-badge' : 'status approved'}>{ad.demoContent ? 'Demo listing' : 'Approved'}</span>
           <dl>
             <dt>Category</dt>
             <dd>{ad.category}{ad.subcategory ? ` / ${ad.subcategory}` : ''}</dd>
             <dt>Location</dt>
-            <dd>{ad.location}</dd>
-            <dt>Contact</dt>
-            <dd>{ad.contactName}</dd>
-            {ad.contactPhone && <><dt>Phone</dt><dd><a href={`tel:${ad.contactPhone}`}>{ad.contactPhone}</a></dd></>}
+            <dd>{ad.location || 'Location not provided'}</dd>
+            {!ad.demoContent && <><dt>Contact</dt><dd>{ad.contactName}</dd>
+              {ad.contactPhone && <><dt>Phone</dt><dd><a href={`tel:${ad.contactPhone}`}>{ad.contactPhone}</a></dd></>}</>}
           </dl>
           <button
             type="button"

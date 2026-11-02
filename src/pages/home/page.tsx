@@ -26,7 +26,7 @@ export default function HomePage({ isPreview = false }: { isPreview?: boolean })
     setLoading(true)
     setFeaturedError('')
     setLatestError('')
-    Promise.allSettled([getFeaturedAds(), getAds({ limit: 6 })])
+    Promise.allSettled([getFeaturedAds(), getAds({ limit: 6, featured: 'false' })])
       .then(([featuredResult, latestResult]) => {
         const featured = featuredResult.status === 'fulfilled' ? featuredResult.value : []
         if (active && featuredResult.status === 'fulfilled') setFeaturedAds(featured)

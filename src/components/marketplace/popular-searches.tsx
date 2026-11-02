@@ -3,7 +3,7 @@ import { Link } from '../ui/link'
 import { SectionHeader } from '../ui/section-header'
 
 export function PopularSearches({ ads }: { ads: MarketplaceAd[] }) {
-  const searches = [...new Map(ads.map((ad) => [`${ad.categorySlug}:${ad.locationSlug}`, ad])).values()].slice(0, 6)
+  const searches = [...new Map(ads.filter((ad) => ad.location && ad.locationSlug).map((ad) => [`${ad.categorySlug}:${ad.locationSlug}`, ad])).values()].slice(0, 6)
   if (!searches.length) return null
   return (
     <section className="content-section popular-searches">

@@ -29,6 +29,10 @@ export interface MarketplaceAd {
   rejectionReason?: string
   createdAt?: string
   attributes?: Record<string, string | number | boolean>
+  demoContent: boolean
+  sourceUrl?: string
+  priceCurrency?: string
+  priceType?: string
 }
 
 type RawRecord = Record<string, unknown>
@@ -78,7 +82,10 @@ export function normalizeAd(input: unknown): MarketplaceAd {
     ? pickName(parentCategory, 'Marketplace')
     : pickName(ad.category, asText(ad.categoryName || ad.categorySlug, 'Marketplace'))
   const subcategory = parentCategory ? pickName(ad.category, '') : asText(ad.subcategory || ad.subcategoryName)
-  const location = pickName(ad.location, asText(ad.locationName || ad.locationSlug, 'New Zealand'))
+  const demoContent = Boolean(ad.demoContent)
+  const location = demoContent && !ad.location && !ad.locationName && !ad.locationSlug
+    ? ''
+    : pickName(ad.location, asText(ad.locationName || ad.locationSlug, 'New Zealand'))
   const images = Array.isArray(ad.images) ? ad.images.map((image) => {
     const url = typeof image === 'string' ? image : asText(asRecord(image).url)
     return url ? { url: imageUrl(url) } : null
@@ -86,11 +93,21 @@ export function normalizeAd(input: unknown): MarketplaceAd {
   const rawImage = asText(ad.image || ad.imageUrl || ad.thumbnailUrl) || images?.[0]?.url || ''
   const image = imageUrl(rawImage)
   const priceValue = asPrice(ad.price ?? ad.amount)
-  const price = priceValue === null
-    ? asText(ad.priceText, 'Contact seller')
+  const priceCurrency = asText(ad.priceCurrency).toUpperCase()
+  const sourcePriceLabel = asText(ad.priceLabel || ad.priceText)
+  const price = sourcePriceLabel
+    ? priceCurrency && !new RegExp(`\\b${priceCurrency}\\b`, 'i').test(sourcePriceLabel)
+      ? `${priceCurrency} ${sourcePriceLabel}`
+      : demoContent && !priceCurrency && /\$/.test(sourcePriceLabel) && /\d/.test(sourcePriceLabel)
+        ? `Currency unspecified · ${sourcePriceLabel}`
+        : sourcePriceLabel
+    : priceValue === null
+    ? (demoContent ? 'Price unavailable' : asText(ad.priceText, 'Contact seller'))
+    : demoContent && !priceCurrency
+    ? String(priceValue)
     : new Intl.NumberFormat('en-NZ', {
         style: 'currency',
-        currency: 'NZD',
+        currency: priceCurrency || 'NZD',
         minimumFractionDigits: Number.isInteger(priceValue) ? 0 : 2,
         maximumFractionDigits: 2,
       }).format(priceValue)
@@ -106,17 +123,21 @@ export function normalizeAd(input: unknown): MarketplaceAd {
     subcategorySlug: asText(ad.subcategorySlug, parentCategory ? pickSlug(ad.category, subcategory) : ''),
     location,
     locationId: asText(asRecord(ad.location).id) || undefined,
-    locationSlug: asText(ad.locationSlug, pickSlug(ad.location, location)),
+    locationSlug: asText(ad.locationSlug, location ? pickSlug(ad.location, location) : ''),
     price,
     priceValue,
     status: asText(ad.status, 'APPROVED'),
     featured: Boolean(ad.featured || ad.isFeatured),
-    image: image || fallbackImage(asText(ad.title, 'Untitled listing')),
+    image: image || (demoContent ? '' : fallbackImage(asText(ad.title, 'Untitled listing'))),
     images,
     description: asText(ad.description || ad.body),
-    contactName: asText(ad.contactName || ad.sellerName || asRecord(ad.user).name, 'Seller'),
+    contactName: demoContent ? '' : asText(ad.contactName || ad.sellerName || asRecord(ad.user).name, 'Seller'),
     contactEmail: asText(ad.contactEmail || ad.email || asRecord(ad.user).email),
     contactPhone: asText(ad.contactPhone),
+    demoContent,
+    sourceUrl: asText(ad.sourceUrl) || undefined,
+    priceCurrency: priceCurrency || undefined,
+    priceType: asText(ad.priceType) || undefined,
     rejectionReason: asText(ad.rejectionReason) || undefined,
     createdAt: asText(ad.createdAt) || undefined,
     attributes: Object.keys(asRecord(ad.attributes)).length
@@ -143,8 +164,10 @@ export interface AdSearchFilters {
   subcategory?: string
   location?: string
   status?: string
+  featured?: string
   minPrice?: string
   maxPrice?: string
+  priceCurrency?: string
   sort?: string
   attributes?: string
   page?: number
@@ -226,11 +249,12 @@ function matchesAttributes(ad: MarketplaceAd, filters: Record<string, AttributeF
   })
 }
 
-function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>) {
+function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes' | 'priceCurrency'>) {
   const min = filters.minPrice ? Number(filters.minPrice) : undefined
   const max = filters.maxPrice ? Number(filters.maxPrice) : undefined
   const attributeFilters = parseAttributeFilters(filters.attributes)
   const filtered = ads.filter((ad) => {
+    if (filters.priceCurrency && ad.demoContent && ad.priceCurrency !== filters.priceCurrency.toUpperCase()) return false
     if ((min !== undefined || max !== undefined) && ad.priceValue === null) return false
     if (min !== undefined && ad.priceValue! < min) return false
     if (max !== undefined && ad.priceValue! > max) return false
@@ -261,7 +285,7 @@ async function fetchLegacyParentCategoryPage(
   filters: Omit<AdSearchFilters, 'category' | 'subcategory' | 'page' | 'limit' | 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>,
   requestedPage: number,
   limit: number,
-  localFilters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes'>,
+  localFilters: Pick<AdSearchFilters, 'minPrice' | 'maxPrice' | 'sort' | 'attributes' | 'priceCurrency'>,
 ): Promise<AdsPage | null> {
   const categories = await getCategories()
   const parent = categories.find((item) => item.slug === categorySlug || item.id === categorySlug)
@@ -336,7 +360,13 @@ async function fetchLegacyParentCategoryPage(
   }
 }
 
-export async function getAdsPage({ page = 1, limit = 12, ...filters }: AdSearchFilters = {}): Promise<AdsPage> {
+export async function getAdsPage({ page = 1, limit = 12, ...inputFilters }: AdSearchFilters = {}): Promise<AdsPage> {
+  const filters = {
+    ...inputFilters,
+    ...((inputFilters.minPrice || inputFilters.maxPrice || inputFilters.sort === 'price_asc' || inputFilters.sort === 'price_desc') && !inputFilters.priceCurrency
+      ? { priceCurrency: 'NZD' }
+      : {}),
+  }
   const capabilities = await getMarketplaceCapabilities()
   if (capabilities.includes('server-filtering')) {
     const result = await apiRequest(`/ads${buildQuery({ ...filters, page, limit })}`)
@@ -354,7 +384,7 @@ export async function getAdsPage({ page = 1, limit = 12, ...filters }: AdSearchF
       { keyword: serverFilters.keyword, location: serverFilters.location, status: serverFilters.status },
       page,
       limit,
-      { minPrice, maxPrice, sort, attributes },
+      { minPrice, maxPrice, sort, attributes, priceCurrency: filters.priceCurrency },
     )
     if (parentResult) return parentResult
   }
@@ -384,7 +414,7 @@ export async function getAdsPage({ page = 1, limit = 12, ...filters }: AdSearchF
   }
 
   const uniqueAds = [...new Map(collected.map((ad) => [ad.id, ad])).values()]
-  const filtered = applyLocalFilters(uniqueAds, { minPrice, maxPrice, sort, attributes })
+  const filtered = applyLocalFilters(uniqueAds, { minPrice, maxPrice, sort, attributes, priceCurrency: filters.priceCurrency })
   const totalPages = Math.ceil(filtered.length / limit)
   const currentPage = Math.min(page, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * limit
