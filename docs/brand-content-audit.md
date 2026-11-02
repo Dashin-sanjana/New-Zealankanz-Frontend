@@ -37,4 +37,4 @@ Audit date: 2 November 2026. Scope: publicly accessible source-site content and 
 
 - No listing or seller data was copied from the old AdForest marketplace or the main WordPress site.
 - Community events are outbound editorial links and are not written to marketplace listing/ad APIs or schemas.
-- No production database, WordPress site, DNS, or Vercel deployment was changed.
+- No production database, WordPress site, or DNS was changed. The frontend was updated on the existing Vercel project for client review only; this is not final launch approval.
