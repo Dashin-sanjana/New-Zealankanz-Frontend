@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { handleImageError } from '../../lib/images'
+import { emptyBannerState } from '../../lib/homepage-behavior.mjs'
 import { getBanners } from '../../services/marketplace.service'
 import { Alert } from '../ui/feedback'
 import { Link } from '../ui/link'
@@ -17,6 +18,8 @@ interface BannerProps {
   compact?: boolean
   fallbackPlacements?: string[]
   emptyMessage?: string
+  preview?: boolean
+  slotName?: string
 }
 
 function BannerLink({ to, className, children }: { to: string; className: string; children: ReactNode }) {
@@ -27,13 +30,14 @@ function BannerLink({ to, className, children }: { to: string; className: string
   return <Link to={destination} className={className}>{children}</Link>
 }
 
-export function Banner({ placement, compact = false, fallbackPlacements = [], emptyMessage = '' }: BannerProps) {
+export function Banner({ placement, compact = false, fallbackPlacements = [], emptyMessage = '', preview = false, slotName = placement }: BannerProps) {
   const [banners, setBanners] = useState<MarketplaceBanner[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [retry, setRetry] = useState(0)
   const banner = banners[0]
   const placementKey = [placement, ...fallbackPlacements].filter(Boolean).join('|')
+  const emptyState = emptyBannerState({ hasBanner: Boolean(banner), preview, loading, error, emptyMessage })
 
   useEffect(() => {
     let active = true
@@ -72,16 +76,18 @@ export function Banner({ placement, compact = false, fallbackPlacements = [], em
   }, [placementKey, retry])
 
   if (!banner) {
-    if (loading) return emptyMessage ? <p className="banner-empty" role="status">Loading sponsored placement…</p> : null
-    if (error) return <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact />
-    return emptyMessage ? <p className="banner-empty">{emptyMessage}</p> : null
+    if (emptyState === 'preview') return <div className={`banner-preview${compact ? ' compact' : ''}`} aria-label={`${slotName} advertisement preview`}><span className="banner-preview-label">Ad placement preview</span><strong>{slotName.replace(/_/g, ' ')}</strong><small>Configured ads will appear here when available.</small></div>
+    if (emptyState === 'loading') return emptyMessage ? <p className="banner-empty" role="status">Loading sponsored placement…</p> : null
+    if (emptyState === 'error') return preview ? <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact /> : null
+    if (emptyState === 'message') return <p className="banner-empty">{emptyMessage}</p>
+    return null
   }
   const sponsorLabel = banner.sponsor ? `Sponsored · ${banner.sponsor}` : 'Sponsored'
 
   if (!compact && banners.length > 1) {
     return (
       <>
-        {error && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact />}
+        {error && preview && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact />}
         <section className="sample-ad-grid" aria-label="Sponsored advertisements">
           {banners.map((item) => (
             <BannerLink to={item.linkUrl} className="sample-ad-card" key={`${item.sponsor}-${item.title}`}>
@@ -98,7 +104,7 @@ export function Banner({ placement, compact = false, fallbackPlacements = [], em
 
   return (
     <>
-      {error && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact />}
+      {error && preview && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} compact />}
       <BannerLink to={banner.linkUrl} className={compact ? 'banner compact' : 'banner'}>
         {banner.imageUrl && (
           <img src={banner.imageUrl} alt={banner.title} onError={(event) => handleImageError(event, banner.title)} />

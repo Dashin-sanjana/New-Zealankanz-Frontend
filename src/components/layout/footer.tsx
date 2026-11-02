@@ -1,5 +1,6 @@
 import { AdSlot } from '../marketplace/ad-slot'
 import { Link } from '../ui/link'
+import newzealankanzLogo from '../../assets/newzealankanz-logo-transparent.png'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -11,6 +12,7 @@ export function Footer() {
       </div>
       <div className="footer-inner">
         <div className="footer-brand">
+          <img className="footer-brand-logo" src={newzealankanzLogo} alt="Newzealankans — හදවතින්ම නවසීලාංකිකයි!!" />
           <strong>NewZealankans Marketplace</strong>
           <p>Clean, approved classifieds for New Zealand communities.</p>
         </div>

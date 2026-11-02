@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 const SITE_NAME = 'NewZealankans Marketplace'
 const DEFAULT_DESCRIPTION =
   'Browse, post, and manage New Zealand marketplace ads — property, motors, jobs, and services across all NZ cities.'
-const DEFAULT_IMAGE = 'https://newzealankans.nz/og-default.jpg'
+const DEFAULT_IMAGE = `${window.location.origin}/newzealankans-logo.png`
 
 type OgOptions = {
   description?: string
