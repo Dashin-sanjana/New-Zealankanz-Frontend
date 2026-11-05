@@ -1,7 +1,7 @@
 import type { AuthSession, AuthUser } from '../types/auth'
 
 const DEFAULT_API_BASE_URL = import.meta.env.PROD
-  ? 'https://new-zealankanz-backend.onrender.com/api'
+  ? 'https://new-zealankanz-backend.vercel.app/api'
   : 'http://localhost:3000/api'
 
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
