@@ -2316,3 +2316,36 @@ button:disabled { cursor: wait; opacity: .65; }
 @media (prefers-reduced-motion: reduce) {
   .home-hero *, .home-hero *::before, .home-hero *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Refined listing image fallback for the approved demo records. */
+.ad-card-img-wrap { background: linear-gradient(145deg, #f1f3ef, #e8ece7); }
+.ad-image-unavailable {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #66736a;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.ad-image-unavailable::before {
+  width: 34px;
+  height: 27px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 72% 28%, currentColor 0 2px, transparent 2.5px),
+    linear-gradient(135deg, transparent 51%, currentColor 52% 56%, transparent 57%) bottom / 100% 70% no-repeat;
+  content: '';
+  opacity: .55;
+}
+:root[data-theme="dark"] .ad-card-img-wrap { background: linear-gradient(145deg, #252e27, #1e2620); }
+:root[data-theme="dark"] .ad-image-unavailable { color: #aab5ab; }
+
+@media (max-width: 600px) {
+  .ad-image-unavailable { min-height: 112px; gap: 7px; font-size: 10px; }
+  .ad-image-unavailable::before { width: 28px; height: 22px; }
+}
