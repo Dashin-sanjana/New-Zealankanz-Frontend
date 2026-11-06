@@ -4,6 +4,7 @@ import { navigate } from '../../lib/navigation'
 import { slugify } from '../../lib/slugify'
 import { getCategories, getLocations } from '../../services/marketplace.service'
 import type { CategoryField, CategoryOption, LocationOption } from '../../types/marketplace'
+import { groupLocations, isNewZealandLocation } from '../../lib/marketplace-display.mjs'
 
 interface DesktopFilterSidebarProps {
   query: URLSearchParams
@@ -57,7 +58,7 @@ export function DesktopFilterSidebar({ query, actionPath, fixedCategory = '', in
   const [location, setLocation] = useState(query.get('location') || initialLocation)
   const [minPrice, setMinPrice] = useState(query.get('minPrice') || '')
   const [maxPrice, setMaxPrice] = useState(query.get('maxPrice') || '')
-  const [sort, setSort] = useState(query.get('sort') || '')
+  const [sort, setSort] = useState(query.get('sort') || 'newest')
   const [attributes, setAttributes] = useState(() => readAttributes(query.get('attributes') || ''))
   const selectedFields = categoryOptions.find((item) => item.slug === category)?.fields?.filter((field) => field.filterable) || []
 
@@ -72,12 +73,15 @@ export function DesktopFilterSidebar({ query, actionPath, fixedCategory = '', in
     setLocation(query.get('location') || initialLocation)
     setMinPrice(query.get('minPrice') || '')
     setMaxPrice(query.get('maxPrice') || '')
-    setSort(query.get('sort') || '')
+    setSort(query.get('sort') || 'newest')
     setAttributes(readAttributes(query.get('attributes') || ''))
   }, [queryKey, fixedCategory, initialLocation])
 
-  const activeCount = [!fixedCategory && category, subcategory, location && !initialLocation, minPrice, maxPrice, sort, ...Object.values(attributes).filter(Boolean)].filter(Boolean).length
+  const activeCount = [!fixedCategory && category, subcategory, location && !initialLocation, minPrice, maxPrice, sort !== 'newest' ? sort : '', ...Object.values(attributes).filter(Boolean)].filter(Boolean).length
   const categoryFields = filterAttributes(selectedFields, attributes)
+  const orderedLocations = groupLocations(locationOptions)
+  const newZealandLocations = orderedLocations.filter((item) => isNewZealandLocation(item.slug || item.name))
+  const otherLocations = orderedLocations.filter((item) => !isNewZealandLocation(item.slug || item.name))
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -111,10 +115,10 @@ export function DesktopFilterSidebar({ query, actionPath, fixedCategory = '', in
         </div>
         {!fixedCategory && <label>Category<select value={category} onChange={(event) => { setCategory(event.target.value); setSubcategory(''); setAttributes({}) }}><option value="">All categories</option>{categoryOptions.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>}
         <label>Subcategory<select value={subcategory} onChange={(event) => setSubcategory(event.target.value)}><option value="">All subcategories</option>{subcategories(categoryOptions, category).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-        <label>Location<select value={location} onChange={(event) => setLocation(event.target.value)}><option value="">All NZ cities</option>{locationOptions.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
+        <label>Location<select value={location} onChange={(event) => setLocation(event.target.value)}><option value="">All locations</option><optgroup label="New Zealand">{newZealandLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>{otherLocations.length > 0 && <optgroup label="More locations">{otherLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>}</select></label>
         {selectedFields.map((field) => <label key={field.key}>{field.label}{field.unit ? ` (${field.unit})` : ''}{field.type === 'select' ? <select value={attributes[field.key] || ''} onChange={(event) => setAttributes((current) => ({ ...current, [field.key]: event.target.value }))}><option value="">Any</option>{field.options?.map((option) => <option key={option}>{option}</option>)}</select> : field.type === 'number' ? <span className="desktop-filter-range"><input type="number" aria-label={`${field.label} minimum`} placeholder="Min" value={attributes[`${field.key}:min`] || ''} onChange={(event) => setAttributes((current) => ({ ...current, [`${field.key}:min`]: event.target.value }))}/><input type="number" aria-label={`${field.label} maximum`} placeholder="Max" value={attributes[`${field.key}:max`] || ''} onChange={(event) => setAttributes((current) => ({ ...current, [`${field.key}:max`]: event.target.value }))}/></span> : <input type="text" value={attributes[field.key] || ''} onChange={(event) => setAttributes((current) => ({ ...current, [field.key]: event.target.value }))}/>}</label>)}
         <div className="desktop-filter-price"><label>Minimum price (NZD)<input type="number" min="0" max={maxPrice || undefined} value={minPrice} placeholder="No minimum" onChange={(event) => setMinPrice(event.target.value)}/></label><label>Maximum price (NZD)<input type="number" min={minPrice || 0} value={maxPrice} placeholder="No maximum" onChange={(event) => setMaxPrice(event.target.value)}/></label></div>
-        <label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="">Newest first</option><option value="price_asc">Price: low → high</option><option value="price_desc">Price: high → low</option><option value="oldest">Oldest first</option></select></label>
+        <label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest first</option><option value="price_asc">Price (NZD): low to high</option><option value="price_desc">Price (NZD): high to low</option><option value="oldest">Oldest first</option></select></label>
         <div className="desktop-filter-actions"><button type="button" className="text-button" onClick={clearAll}>Clear all</button><button type="submit" className="primary-button">Apply</button></div>
       </form>
     </aside>

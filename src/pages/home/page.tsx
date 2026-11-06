@@ -11,6 +11,7 @@ import { SectionHeader } from '../../components/ui/section-header'
 import { usePageTitle } from '../../hooks/use-page-title'
 import { getAds, getFeaturedAds } from '../../services/ads.service'
 import type { MarketplaceAd } from '../../services/ads.service'
+import { prioritizeNewZealandListings } from '../../lib/marketplace-display.mjs'
 
 export default function HomePage({ isPreview = false }: { isPreview?: boolean }) {
   usePageTitle('Home')
@@ -26,15 +27,15 @@ export default function HomePage({ isPreview = false }: { isPreview?: boolean })
     setLoading(true)
     setFeaturedError('')
     setLatestError('')
-    Promise.allSettled([getFeaturedAds(), getAds({ limit: 6, featured: 'false' })])
+    Promise.allSettled([getFeaturedAds(), getAds({ limit: 20, featured: 'false' })])
       .then(([featuredResult, latestResult]) => {
         const featured = featuredResult.status === 'fulfilled' ? featuredResult.value : []
-        if (active && featuredResult.status === 'fulfilled') setFeaturedAds(featured)
+        if (active && featuredResult.status === 'fulfilled') setFeaturedAds(prioritizeNewZealandListings(featured))
         else if (active && featuredResult.status === 'rejected') setFeaturedError(featuredResult.reason instanceof Error ? featuredResult.reason.message : 'Featured listings are temporarily unavailable.')
 
         if (active && latestResult.status === 'fulfilled') {
           const featuredIds = new Set(featured.map((ad: MarketplaceAd) => ad.id))
-          setLatestAds(latestResult.value.filter((ad: MarketplaceAd) => !featuredIds.has(ad.id)).slice(0, 4))
+          setLatestAds(prioritizeNewZealandListings(latestResult.value.filter((ad: MarketplaceAd) => !featuredIds.has(ad.id))).slice(0, 4))
         } else if (active && latestResult.status === 'rejected') {
           setLatestError(latestResult.reason instanceof Error ? latestResult.reason.message : 'Latest listings are temporarily unavailable.')
         }
@@ -48,7 +49,7 @@ export default function HomePage({ isPreview = false }: { isPreview?: boolean })
       <HomeHeroSlider />
 
       <section className="content-section home-categories" aria-label="Browse categories">
-        <SectionHeader title="Browse categories" actionLabel="View all listings" actionTo="/search" />
+        <SectionHeader title="Popular categories" actionLabel="Browse all categories" actionTo="/search" />
         <CategoryGrid />
       </section>
 

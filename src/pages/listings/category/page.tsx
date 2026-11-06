@@ -22,21 +22,32 @@ interface CategoryOption {
   children?: Array<string | CategoryOption>
 }
 
+function categoryForRoute(slug: string): CategoryOption | null {
+  if (!slug) return null
+  const known = categories.find((item) => item.slug === slug)
+  if (known) return known
+  return {
+    id: slug,
+    slug,
+    name: slug.split('-').filter(Boolean).map((word) => `${word[0]?.toUpperCase() || ''}${word.slice(1)}`).join(' '),
+  }
+}
+
 export default function CategoryPage({ slug, query }: { slug: string; query: URLSearchParams }) {
-  const [category, setCategory] = useState<CategoryOption | null>(() => categories.find((item) => item.slug === slug) || null)
+  const [category, setCategory] = useState<CategoryOption | null>(() => categoryForRoute(slug))
   const [loaded, setLoaded] = useState(false)
   const keyword = query?.get('q') || query?.get('keyword') || ''
   const subcategory = query?.get('subcategory') || ''
   const location = query?.get('location') || ''
   const minPrice = query?.get('minPrice') || ''
   const maxPrice = query?.get('maxPrice') || ''
-  const sort = query?.get('sort') || ''
+  const sort = query?.get('sort') || 'newest'
   const attributes = query?.get('attributes') || ''
   const page = Math.max(Number.parseInt(query?.get('page') || '1', 10) || 1, 1)
   usePageTitle(category?.name || 'Category', {
     description: category?.description
       ? category.description
-      : `Browse ${category?.name ?? ''} listings on NewZealankans Marketplace across all NZ cities.`,
+      : `Browse ${category?.name ?? ''} listings on NewZealankans Marketplace across available locations.`,
   })
   const [ads, setAds] = useState<MarketplaceAd[]>([])
   const [pageInfo, setPageInfo] = useState<AdsPage['meta']>({ total: 0, page, limit: 12, pages: 0 })
@@ -49,8 +60,8 @@ export default function CategoryPage({ slug, query }: { slug: string; query: URL
     setAdsLoading(true)
     setError('')
     let active = true
-    const localCat = categories.find((item) => item.slug === slug)
-    setCategory(localCat || null)
+    const localCat = categoryForRoute(slug)
+    setCategory(localCat)
 
     const loadAds = (activeCategory: CategoryOption | null | undefined) => {
       if (!activeCategory || !slug) return
@@ -87,7 +98,7 @@ export default function CategoryPage({ slug, query }: { slug: string; query: URL
   if (!category) return <PageFrame title="Loading category" subtitle="Fetching category details." />
 
   return (
-    <PageFrame title={category.name} subtitle="Browse approved listings in this marketplace category.">
+    <PageFrame title={category.name} subtitle="Browse approved listings in this marketplace category." className="category-listings-page">
       <AdSlot name="CATEGORY_TOP" />
       <SearchBar
         actionPath={`/category/${category.slug}`}
@@ -102,12 +113,16 @@ export default function CategoryPage({ slug, query }: { slug: string; query: URL
         defaultAttributes={attributes}
       />
       <AdSlot name="CATEGORY_AFTER_SEARCH" />
-      <div className="marketplace-results-layout">
+      <div className="marketplace-results-layout category-results-layout">
         <DesktopFilterSidebar query={query} actionPath={`/category/${slug}`} fixedCategory={category.slug} />
         <div className="marketplace-results-main">
           <ActiveFilterChips path={`/category/${slug}`} query={query} />
           {error && <Alert type="error" message={error} onRetry={() => setRetry((value) => value + 1)} />}
-          {adsLoading && ads.length === 0 && <p role="status">Loading listings…</p>}
+          {adsLoading && ads.length === 0 && (
+            <div className="listing-loading-grid" role="status" aria-label="Loading listings">
+              {Array.from({ length: 4 }, (_, index) => <div className="listing-loading-card" key={index}><span /><div><i /><i /><i /></div></div>)}
+            </div>
+          )}
           <ResultSummary count={pageInfo.total} failed={Boolean(error)} loading={adsLoading} />
           {pageInfo.localFilterScope && <LocalFilterNotice scope={pageInfo.localFilterScope} />}
           <AdGrid

@@ -3,6 +3,7 @@ import { fallbackImage } from '../lib/images'
 import { API_ORIGIN, apiRequest, unwrapCollection } from './api'
 import { getCategories, getMarketplaceCapabilities } from './marketplace.service'
 import type { CategoryOption } from '../types/marketplace'
+import { formatListingPrice, isKnownPublicSample, matchesPriceCurrency } from '../lib/marketplace-display.mjs'
 
 export interface MarketplaceAd {
   id: string
@@ -94,23 +95,15 @@ export function normalizeAd(input: unknown): MarketplaceAd {
   const image = imageUrl(rawImage)
   const priceValue = asPrice(ad.price ?? ad.amount)
   const priceCurrency = asText(ad.priceCurrency).toUpperCase()
-  const sourcePriceLabel = asText(ad.priceLabel || ad.priceText)
-  const price = sourcePriceLabel
-    ? priceCurrency && !new RegExp(`\\b${priceCurrency}\\b`, 'i').test(sourcePriceLabel)
-      ? `${priceCurrency} ${sourcePriceLabel}`
-      : demoContent && !priceCurrency && /\$/.test(sourcePriceLabel) && /\d/.test(sourcePriceLabel)
-        ? `Currency unspecified · ${sourcePriceLabel}`
-        : sourcePriceLabel
-    : priceValue === null
-    ? (demoContent ? 'Price unavailable' : asText(ad.priceText, 'Contact seller'))
-    : demoContent && !priceCurrency
-    ? String(priceValue)
-    : new Intl.NumberFormat('en-NZ', {
-        style: 'currency',
-        currency: priceCurrency || 'NZD',
-        minimumFractionDigits: Number.isInteger(priceValue) ? 0 : 2,
-        maximumFractionDigits: 2,
-      }).format(priceValue)
+  const rawPriceString = typeof ad.price === 'string' && asPrice(ad.price) === null ? ad.price.trim() : ''
+  const sourcePriceLabel = asText(ad.priceLabel || ad.priceText, rawPriceString)
+  const price = formatListingPrice({
+    priceValue,
+    priceCurrency,
+    priceType: asText(ad.priceType),
+    priceLabel: sourcePriceLabel,
+    demoContent,
+  })
 
   return {
     id: asText(ad.id || ad._id || ad.slug || ad.title, 'listing'),
@@ -154,8 +147,12 @@ function normalizeAds(result: unknown): MarketplaceAd[] {
   return unwrapCollection(result).map((ad: unknown) => normalizeAd(ad))
 }
 
+function normalizePublicAds(result: unknown): MarketplaceAd[] {
+  return normalizeAds(result).filter((ad) => !isKnownPublicSample(ad))
+}
+
 export function getFeaturedAds() {
-  return apiRequest('/ads?featured=true').then((ads) => normalizeAds(ads).filter((ad) => ad.featured))
+  return apiRequest('/ads?featured=true').then((ads) => normalizePublicAds(ads).filter((ad) => ad.featured))
 }
 
 export interface AdSearchFilters {
@@ -197,14 +194,16 @@ const MAX_DESCENDANT_PAGE_REQUESTS = 40
 
 function readPage(result: unknown, page: number, limit: number): AdsPage {
   const meta = asRecord(asRecord(result).meta)
-  const ads = normalizeAds(result)
+  const allAds = normalizeAds(result)
+  const ads = allAds.filter((ad) => !isKnownPublicSample(ad))
+  const excludedOnPage = allAds.length - ads.length
   const total = metaNumber(meta, 'total', ads.length)
   const pageLimit = Math.max(metaNumber(meta, 'limit', limit), 1)
   const pages = metaNumber(meta, 'pages', Math.ceil(total / pageLimit))
   return {
     ads,
     meta: {
-      total,
+      total: Math.max(total - excludedOnPage, ads.length),
       page: Math.max(metaNumber(meta, 'page', page), 1),
       limit: pageLimit,
       pages,
@@ -254,7 +253,7 @@ function applyLocalFilters(ads: MarketplaceAd[], filters: Pick<AdSearchFilters, 
   const max = filters.maxPrice ? Number(filters.maxPrice) : undefined
   const attributeFilters = parseAttributeFilters(filters.attributes)
   const filtered = ads.filter((ad) => {
-    if (filters.priceCurrency && ad.demoContent && ad.priceCurrency !== filters.priceCurrency.toUpperCase()) return false
+    if (!matchesPriceCurrency(ad.priceCurrency, filters.priceCurrency)) return false
     if ((min !== undefined || max !== undefined) && ad.priceValue === null) return false
     if (min !== undefined && ad.priceValue! < min) return false
     if (max !== undefined && ad.priceValue! > max) return false
@@ -368,7 +367,10 @@ export async function getAdsPage({ page = 1, limit = 12, ...inputFilters }: AdSe
       : {}),
   }
   const capabilities = await getMarketplaceCapabilities()
-  if (capabilities.includes('server-filtering')) {
+  // The public API deliberately includes non-demo listings with unknown
+  // currencies in currency-filtered responses. Apply those filters locally so
+  // price ranges and price sorting never treat an unknown currency as NZD.
+  if (capabilities.includes('server-filtering') && !filters.priceCurrency) {
     const result = await apiRequest(`/ads${buildQuery({ ...filters, page, limit })}`)
     return readPage(result, page, limit)
   }
@@ -440,7 +442,11 @@ export function getAds(filters: AdSearchFilters = {}) {
 }
 
 export function getAdBySlug(slug: string) {
-  return apiRequest(`/ads/slug/${slug}`).then((ad) => (ad ? normalizeAd(ad) : null))
+  return apiRequest(`/ads/slug/${slug}`).then((ad) => {
+    if (!ad) return null
+    const listing = normalizeAd(ad)
+    return isKnownPublicSample(listing) ? null : listing
+  })
 }
 
 export function saveAd(formData: FormData, mode: 'create' | 'edit' = 'create', idOrSlug = '') {

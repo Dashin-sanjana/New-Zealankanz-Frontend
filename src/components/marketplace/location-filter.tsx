@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react'
 import { locations } from '../../data/marketplace'
 import { getLocations } from '../../services/marketplace.service'
 import { Link } from '../ui/link'
+import { getPopularLocations, isNewZealandLocation } from '../../lib/marketplace-display.mjs'
 
 export function LocationFilter() {
   const [items, setItems] = useState(locations)
+  const localLocations = getPopularLocations(items)
+  const visibleLocations = localLocations.length ? localLocations : getPopularLocations(locations)
+  const hasOtherLocations = items.some((location) => !isNewZealandLocation(location.slug || location.name))
 
   useEffect(() => {
     let active = true
@@ -19,12 +23,12 @@ export function LocationFilter() {
       <div className="location-panel-heading">
         <div>
           <p className="eyebrow">Find listings near you</p>
-          <h2>Browse by location</h2>
+          <h2>Popular New Zealand locations</h2>
         </div>
-        <span aria-hidden="true">NZ</span>
+        {hasOtherLocations && <Link className="location-all-link" to="/search">All locations</Link>}
       </div>
       <div className="location-list">
-        {items.map((location) => (
+        {visibleLocations.map((location) => (
           <Link key={location.id} to={`/location/${location.slug}`}>{location.name}</Link>
         ))}
       </div>

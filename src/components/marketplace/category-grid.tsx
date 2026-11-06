@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { categories } from '../../data/marketplace'
 import { getCategories } from '../../services/marketplace.service'
 import { Link } from '../ui/link'
+import { getPopularCategories } from '../../lib/marketplace-display.mjs'
 
 interface CategoryMetaItem {
   description: string
@@ -38,6 +39,7 @@ interface Category {
 
 export function CategoryGrid() {
   const [items, setItems] = useState<Category[]>(categories)
+  const popularItems = getPopularCategories(items)
 
   useEffect(() => {
     let active = true
@@ -49,7 +51,7 @@ export function CategoryGrid() {
 
   return (
     <div className="category-grid" role="group" aria-label="Marketplace categories" tabIndex={0}>
-      {items.map((category) => (
+      {popularItems.map((category) => (
         <Link
           className="category-card"
           key={category.id}

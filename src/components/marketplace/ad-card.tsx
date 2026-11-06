@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { handleImageError } from '../../lib/images'
 import { Link } from '../ui/link'
 import type { MarketplaceAd } from '../../services/ads.service'
+import { formatPriceType, getPriceCurrencyNote } from '../../lib/marketplace-display.mjs'
 
 function attributeLabel(key: string) {
   return key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]/g, ' ').replace(/^\w/, (letter) => letter.toUpperCase())
@@ -25,7 +26,14 @@ export function AdCard({ ad, onRemove }: { ad: MarketplaceAd; onRemove?: () => v
           <span className="ad-card-category-pill">{ad.category}</span>
         </span>
         <span className="ad-card-body">
-          <span className="ad-card-title-row"><strong className="ad-card-title">{ad.title}</strong><strong className="ad-price">{ad.price}</strong></span>
+          <span className="ad-card-title-row">
+            <strong className="ad-card-title">{ad.title}</strong>
+            <span className="ad-card-price-block">
+              <strong className="ad-price">{ad.price}</strong>
+              {ad.priceValue !== null && ad.priceType && <span className="price-type-label">{formatPriceType(ad.priceType)}</span>}
+              {getPriceCurrencyNote({ priceValue: ad.priceValue, priceCurrency: ad.priceCurrency, priceLabel: ad.price }) && <span className="price-currency-note">Currency not specified</span>}
+            </span>
+          </span>
           <span className="ad-card-meta">
             <span className="ad-card-location">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

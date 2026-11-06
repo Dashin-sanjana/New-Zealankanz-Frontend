@@ -12,6 +12,7 @@ import { navigate } from '../../../lib/navigation'
 import { getStoredAuth } from '../../../services/api'
 import NotFoundPage from '../../not-found/page'
 import type { FormEvent, SyntheticEvent } from 'react'
+import { formatPriceType, getPriceCurrencyNote } from '../../../lib/marketplace-display.mjs'
 
 function ImageGallery({ ad }: { ad: MarketplaceAd }) {
   const rawImages = ad.images?.length ? ad.images : [{ url: ad.image }]
@@ -160,14 +161,18 @@ export default function AdDetailPage({ slug }: { slug?: string }) {
         }
       })
 
-    getWatchlist()
-      .then((items: Array<{ id: string | number }>) => {
-        if (active) {
-          setSavedIds(new Set(items.map((a) => String(a.id))))
-          setWatchlistAvailable(true)
-        }
-      })
-      .catch((err) => { if (active && isWatchlistUnavailable(err)) setWatchlistAvailable(false) })
+    // The watchlist endpoint is private. Avoid an expected 401/403 request for
+    // visitors; the button already sends signed-out users to the login page.
+    if (getStoredAuth()) {
+      getWatchlist()
+        .then((items: Array<{ id: string | number }>) => {
+          if (active) {
+            setSavedIds(new Set(items.map((a) => String(a.id))))
+            setWatchlistAvailable(true)
+          }
+        })
+        .catch((err) => { if (active && isWatchlistUnavailable(err)) setWatchlistAvailable(false) })
+    }
     return () => { active = false }
   }, [slug, retry])
 
@@ -210,7 +215,15 @@ export default function AdDetailPage({ slug }: { slug?: string }) {
     )
   }
   if (loaded && !ad) return <NotFoundPage />
-  if (!ad) return <PageFrame title="Loading listing" subtitle="Fetching the latest listing details." />
+  if (!ad) return (
+    <PageFrame title="Loading listing" subtitle="Fetching the latest listing details.">
+      <div className="detail-loading-notice" />
+      <div className="detail-layout detail-loading" role="status" aria-label="Loading listing details">
+        <div className="detail-loading-main"><div className="detail-loading-image" /><div className="detail-loading-copy"><i /><i /><i /><i /></div></div>
+        <aside className="detail-loading-panel"><i /><i /><i /><i /><i /><i /><i /></aside>
+      </div>
+    </PageFrame>
+  )
 
   const isSaved = savedIds.has(String(ad.id))
 
@@ -243,7 +256,11 @@ export default function AdDetailPage({ slug }: { slug?: string }) {
           {!ad.demoContent && <EnquiryForm ad={ad} />}
         </div>
         <aside className="detail-panel">
-          <strong className="price">{ad.price}</strong>
+          <div className="detail-price-block">
+            <strong className="price">{ad.price}</strong>
+            {ad.priceValue !== null && ad.priceType && <span className="price-type-label">{formatPriceType(ad.priceType)}</span>}
+            {getPriceCurrencyNote({ priceValue: ad.priceValue, priceCurrency: ad.priceCurrency, priceLabel: ad.price }) && <span className="price-currency-note">Currency not specified</span>}
+          </div>
           <span className={ad.demoContent ? 'demo-content-badge detail-demo-badge' : 'status approved'}>{ad.demoContent ? 'Demo listing' : 'Approved'}</span>
           <dl>
             <dt>Category</dt>

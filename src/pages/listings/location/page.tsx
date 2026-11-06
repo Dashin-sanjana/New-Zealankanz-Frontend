@@ -20,7 +20,7 @@ export default function LocationPage({ slug, query }: { slug: string; query: URL
   const subcategory = query.get('subcategory') || ''
   const minPrice = query.get('minPrice') || ''
   const maxPrice = query.get('maxPrice') || ''
-  const sort = query.get('sort') || ''
+  const sort = query.get('sort') || 'newest'
   const attributes = query.get('attributes') || ''
   const page = Math.max(Number.parseInt(query.get('page') || '1', 10) || 1, 1)
   const [location, setLocation] = useState<LocationOption | null>(() => locations.find((item) => item.slug === slug) || null)

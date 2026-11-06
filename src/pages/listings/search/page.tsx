@@ -19,7 +19,7 @@ export default function SearchPage({ query }: { query: URLSearchParams }) {
   const location = query.get('location') || ''
   const minPrice = query.get('minPrice') || ''
   const maxPrice = query.get('maxPrice') || ''
-  const sort = query.get('sort') || ''
+  const sort = query.get('sort') || 'newest'
   const attributes = query.get('attributes') || ''
   const page = Math.max(Number.parseInt(query.get('page') || '1', 10) || 1, 1)
   const [ads, setAds] = useState<MarketplaceAd[]>([])
@@ -45,7 +45,7 @@ export default function SearchPage({ query }: { query: URLSearchParams }) {
   }, [keyword, category, subcategory, location, minPrice, maxPrice, sort, attributes, page, retry])
 
   return (
-    <PageFrame title="Search marketplace" subtitle="Search approved ads by keyword, category, and NZ city.">
+    <PageFrame title="Search marketplace" subtitle="Search approved listings by keyword, category, location, and price.">
       <AdSlot name="SEARCH_TOP" />
       <SearchBar
         defaultKeyword={keyword}

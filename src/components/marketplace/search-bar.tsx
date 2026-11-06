@@ -6,6 +6,7 @@ import { getCategories, getLocations } from '../../services/marketplace.service'
 import type { CategoryOption, CategoryField, LocationOption } from '../../types/marketplace'
 import { getAdsPage, type MarketplaceAd } from '../../services/ads.service'
 import { Alert } from '../ui/feedback'
+import { formatPriceType, groupLocations, isNewZealandLocation } from '../../lib/marketplace-display.mjs'
 
 interface SearchBarProps {
   defaultKeyword?: string
@@ -70,7 +71,7 @@ export function SearchBar({
   defaultLocation = '',
   defaultMinPrice = '',
   defaultMaxPrice = '',
-  defaultSort = '',
+  defaultSort = 'newest',
   actionPath = '/search',
   fixedCategory = false,
   showAdvancedFilters = true,
@@ -96,18 +97,21 @@ export function SearchBar({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [minPrice, setMinPrice] = useState(defaultMinPrice)
   const [maxPrice, setMaxPrice] = useState(defaultMaxPrice)
-  const [sort, setSort] = useState(defaultSort)
+  const [sort, setSort] = useState(defaultSort || 'newest')
   const [optionsError, setOptionsError] = useState('')
   const [optionsRetry, setOptionsRetry] = useState(0)
   const [attributes, setAttributes] = useState<Record<string, string>>(() => readAttributeFilters(defaultAttributes))
   const selectedCategoryFields: CategoryField[] = categoryOptions.find((item) => item.slug === selectedCategory)?.fields?.filter((field) => field.filterable) || []
+  const orderedLocations = useMemo(() => groupLocations(locationOptions), [locationOptions])
+  const newZealandLocations = orderedLocations.filter((item) => isNewZealandLocation(item.slug || item.name))
+  const otherLocations = orderedLocations.filter((item) => !isNewZealandLocation(item.slug || item.name))
   const activeFilterCount = useMemo(() => [
     !fixedCategory && selectedCategory,
     selectedSubcategory,
     selectedLocation,
     minPrice,
     maxPrice,
-    sort,
+    sort && sort !== 'newest' ? sort : '',
     ...Object.values(attributes).filter(Boolean),
   ].filter(Boolean).length, [attributes, fixedCategory, maxPrice, minPrice, selectedCategory, selectedLocation, selectedSubcategory, sort])
 
@@ -135,7 +139,7 @@ export function SearchBar({
   useEffect(() => {
     setMinPrice(defaultMinPrice)
     setMaxPrice(defaultMaxPrice)
-    setSort(defaultSort)
+    setSort(defaultSort || 'newest')
   }, [defaultMinPrice, defaultMaxPrice, defaultSort])
 
   useEffect(() => {
@@ -275,7 +279,7 @@ export function SearchBar({
                 <div id="sb-suggestions" role="listbox" aria-label={keyword.trim() ? 'Matching listings' : 'Recent searches'}>
                 {suggestions.length ? suggestions.map((ad, index) => (
                   <button key={ad.id} id={`sb-option-${index}`} type="button" role="option" aria-selected={index === activeSuggestion} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(ad)}>
-                    <span>{ad.title}</span><small>{ad.price} · {ad.location}</small>
+                    <span>{ad.title}</span><small>{ad.price}{ad.priceValue !== null && ad.priceType ? ` · ${formatPriceType(ad.priceType)}` : ''} · {ad.location}</small>
                   </button>
                 )) : !keyword.trim() ? recentSearches.map((term, index) => <button key={term} id={`sb-option-${index}`} type="button" role="option" aria-selected={index === activeSuggestion} onMouseDown={(event) => event.preventDefault()} onClick={() => { setKeyword(term); persistKeyword(term); setSuggestionsOpen(false) }}>{term}</button>)
                   : suggestionsStatus === 'loading' ? <div className="search-suggestion-message" role="status">Looking for matching listings…</div>
@@ -300,7 +304,9 @@ export function SearchBar({
           <div className="search-field">
             <label htmlFor="sb-location" className="search-label">Location</label>
             <select id="sb-location" value={selectedLocation} onChange={(event) => setSelectedLocation(event.target.value)}>
-              <option value="">All NZ cities</option>{locationOptions.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
+              <option value="">All locations</option>
+              <optgroup label="New Zealand">{newZealandLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>
+              {otherLocations.length > 0 && <optgroup label="More locations">{otherLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>}
             </select>
           </div>
         )}
@@ -331,7 +337,9 @@ export function SearchBar({
             <div className="search-field">
               <label htmlFor="sb-location" className="search-label">Location</label>
               <select id="sb-location" value={selectedLocation} onChange={(event) => setSelectedLocation(event.target.value)}>
-                <option value="">All NZ cities</option>{locationOptions.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
+                <option value="">All locations</option>
+                <optgroup label="New Zealand">{newZealandLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>
+                {otherLocations.length > 0 && <optgroup label="More locations">{otherLocations.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</optgroup>}
               </select>
             </div>
             <div className="search-field">
@@ -373,9 +381,9 @@ export function SearchBar({
             <div className="search-field">
               <label htmlFor="sb-sort" className="search-label">Sort by</label>
               <select id="sb-sort" value={sort} onChange={(event) => setSort(event.target.value)}>
-                <option value="">Newest first</option>
-                <option value="price_asc">Price: low → high</option>
-                <option value="price_desc">Price: high → low</option>
+                <option value="newest">Newest first</option>
+                <option value="price_asc">Price (NZD): low to high</option>
+                <option value="price_desc">Price (NZD): high to low</option>
                 <option value="oldest">Oldest first</option>
               </select>
             </div>
@@ -383,7 +391,7 @@ export function SearchBar({
             <footer className="filter-drawer-actions">
               <button className="text-button" type="button" onClick={() => {
                 setSelectedCategory(fixedCategory ? defaultCategory : '')
-                setSelectedSubcategory(''); setSelectedLocation(''); setMinPrice(''); setMaxPrice(''); setSort(''); setAttributes({})
+                setSelectedSubcategory(''); setSelectedLocation(''); setMinPrice(''); setMaxPrice(''); setSort('newest'); setAttributes({})
                 const params = new URLSearchParams()
                 if (keyword.trim()) params.set('q', keyword.trim())
                 setFiltersOpen(false)
