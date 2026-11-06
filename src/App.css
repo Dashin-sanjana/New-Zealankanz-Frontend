@@ -2344,6 +2344,33 @@ button:disabled { cursor: wait; opacity: .65; }
 }
 :root[data-theme="dark"] .ad-card-img-wrap { background: linear-gradient(145deg, #252e27, #1e2620); }
 :root[data-theme="dark"] .ad-image-unavailable { color: #aab5ab; }
+.detail-image-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #f1f3ef, #e8ece7);
+  color: #66736a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.detail-image-unavailable::before {
+  width: 42px;
+  height: 33px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 72% 28%, currentColor 0 2.5px, transparent 3px),
+    linear-gradient(135deg, transparent 51%, currentColor 52% 56%, transparent 57%) bottom / 100% 70% no-repeat;
+  content: '';
+  opacity: .55;
+}
+:root[data-theme="dark"] .detail-image-unavailable {
+  background: linear-gradient(145deg, #252e27, #1e2620);
+  color: #aab5ab;
+}
 
 @media (max-width: 600px) {
   .ad-image-unavailable { min-height: 112px; gap: 7px; font-size: 10px; }
